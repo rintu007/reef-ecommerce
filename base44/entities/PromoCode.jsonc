@@ -1,0 +1,57 @@
+{
+  "name": "PromoCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The promo code string e.g. REEF2024"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "free_membership_6mo",
+        "free_membership_1yr",
+        "bonus_listings"
+      ],
+      "description": "What the code grants"
+    },
+    "bonus_listings": {
+      "type": "number",
+      "description": "Number of extra listing slots granted (only for bonus_listings type)"
+    },
+    "max_uses": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times this code can be used total"
+    },
+    "uses": {
+      "type": "number",
+      "default": 0,
+      "description": "How many times it has been used"
+    },
+    "used_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Emails of users who redeemed this code"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional expiry date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string",
+      "description": "Admin notes about this code"
+    }
+  },
+  "required": [
+    "code",
+    "type"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "MembershipPlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Plan name e.g. Free, Pro, Business"
+    },
+    "slug": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "business"
+      ],
+      "description": "Machine-readable identifier"
+    },
+    "price_monthly": {
+      "type": "number",
+      "description": "Monthly price in USD (0 for free)"
+    },
+    "max_active_listings": {
+      "type": "number",
+      "description": "Max number of active listings allowed (-1 = unlimited)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of feature descriptions shown on pricing page"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "price_monthly",
+    "max_active_listings"
+  ]
+}

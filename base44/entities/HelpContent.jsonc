@@ -1,0 +1,73 @@
+{
+  "name": "HelpContent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "video",
+        "article",
+        "tip",
+        "faq"
+      ]
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "saltwater",
+        "freshwater",
+        "both"
+      ],
+      "default": "both",
+      "description": "Which market this content applies to"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "beginner_setup",
+        "coral_care",
+        "fish_care",
+        "fragging_tips",
+        "lighting_flow",
+        "water_chemistry",
+        "pest_prevention",
+        "shipping_acclimation",
+        "maintenance"
+      ],
+      "description": "Primary category"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional categories this content belongs to (for multi-category support)"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string",
+      "description": "Article/tip content in markdown"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number",
+      "default": 0
+    },
+    "published": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "content_type",
+    "category"
+  ]
+}

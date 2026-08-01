@@ -1,0 +1,27 @@
+{
+  "name": "SellerPayoutAccount",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Seller's email"
+    },
+    "stripe_account_id": {
+      "type": "string",
+      "description": "Stripe Connect Express account ID"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether seller has completed Stripe onboarding"
+    },
+    "payouts_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether Stripe has enabled payouts for this account"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

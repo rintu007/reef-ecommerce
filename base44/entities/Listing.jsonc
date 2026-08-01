@@ -1,0 +1,264 @@
+{
+  "name": "Listing",
+  "type": "object",
+  "rls": {
+    "read": true
+  },
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Listing title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description"
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "saltwater",
+        "freshwater",
+        "both"
+      ],
+      "default": "saltwater",
+      "description": "Which marketplace this listing belongs to"
+    },
+    "listing_type": {
+      "type": "string",
+      "enum": [
+        "coral",
+        "fish",
+        "sw_invert",
+        "equipment",
+        "fw_fish",
+        "fw_amphibian",
+        "fw_turtle",
+        "fw_other",
+        "fw_equipment"
+      ],
+      "description": "Main category type"
+    },
+    "category": {
+      "type": "string",
+      "description": "Sub-category within listing type"
+    },
+    "price": {
+      "type": "number",
+      "description": "Per-item price in the listing's currency"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "ISO 4217 currency code e.g. USD, EUR, GBP, CAD, AUD"
+    },
+    "pickup_price": {
+      "type": "number",
+      "description": "Optional separate price for local pickup (in listing currency)"
+    },
+    "shipping_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Flat shipping cost charged to buyer on top of item price (0 = shipping included)"
+    },
+    "shipping_tiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "up_to_qty": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Tiered shipping prices by quantity: [{up_to_qty: 2, price: 15}, {up_to_qty: 5, price: 20}]. Last tier covers all higher quantities."
+    },
+    "min_qty": {
+      "type": "number",
+      "default": 1,
+      "description": "Minimum purchase quantity per order"
+    },
+    "min_order_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Minimum order amount in listing currency (0 = no minimum)"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of photo URLs"
+    },
+    "wysiwyg": {
+      "type": "boolean",
+      "default": false
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "shipping_available": {
+      "type": "boolean",
+      "default": false
+    },
+    "local_pickup": {
+      "type": "boolean",
+      "default": true
+    },
+    "pickup_address": {
+      "type": "string"
+    },
+    "pickup_times": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "sold",
+        "pending_approval",
+        "removed"
+      ],
+      "default": "active"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "featured_fee": {
+      "type": "boolean",
+      "default": false
+    },
+    "seller_email": {
+      "type": "string"
+    },
+    "seller_name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "seller_country": {
+      "type": "string",
+      "description": "ISO country code of seller e.g. US, GB"
+    },
+    "ships_to_countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ISO country codes this listing ships to (empty = local only)"
+    },
+    "frag_size": {
+      "type": "string",
+      "description": "For corals"
+    },
+    "light_requirement": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "For corals"
+    },
+    "flow_requirement": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "For corals"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "expert"
+      ]
+    },
+    "care_notes": {
+      "type": "string"
+    },
+    "species_name": {
+      "type": "string",
+      "description": "For fish/inverts"
+    },
+    "tank_size_recommendation": {
+      "type": "string"
+    },
+    "temperament": {
+      "type": "string",
+      "enum": [
+        "peaceful",
+        "semi-aggressive",
+        "aggressive"
+      ]
+    },
+    "reef_safe": {
+      "type": "boolean",
+      "description": "For fish/inverts"
+    },
+    "brand": {
+      "type": "string",
+      "description": "For equipment"
+    },
+    "model": {
+      "type": "string",
+      "description": "For equipment"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "new",
+        "like_new",
+        "good",
+        "fair",
+        "parts_only"
+      ],
+      "description": "For equipment"
+    },
+    "equipment_notes": {
+      "type": "string"
+    },
+    "equipment_market": {
+      "type": "string",
+      "enum": [
+        "saltwater_only",
+        "freshwater_only",
+        "both"
+      ],
+      "description": "For equipment: which markets the equipment is compatible with"
+    },
+    "doa_policy": {
+      "type": "string",
+      "enum": [
+        "full_refund",
+        "store_credit",
+        "no_refund",
+        "custom",
+        "not_applicable"
+      ]
+    },
+    "doa_policy_custom": {
+      "type": "string"
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "listing_type",
+    "price"
+  ]
+}

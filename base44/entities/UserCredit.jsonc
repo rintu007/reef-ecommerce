@@ -1,0 +1,45 @@
+{
+  "name": "UserCredit",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Recipient of the credit"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Credit amount in USD"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for credit e.g. DOA claim on order #xyz"
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Associated order ID"
+    },
+    "issued_by": {
+      "type": "string",
+      "description": "Admin email or system"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "used",
+        "expired"
+      ],
+      "default": "available"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional expiry date"
+    }
+  },
+  "required": [
+    "user_email",
+    "amount",
+    "reason"
+  ]
+}
