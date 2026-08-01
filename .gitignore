@@ -30,3 +30,19 @@ dist-ssr
 .env
 .vite
 base44/.app.jsonc
+
+# Monorepo build outputs
+.next
+.turbo
+apps/*/dist
+apps/*/.next
+apps/*/.expo
+packages/*/dist
+out
+
+# Raw exported production data (contains PII) — never push to a remote
+/db
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
