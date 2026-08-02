@@ -19,7 +19,7 @@ export default async function BrowsePage({
   return (
     <div className="min-h-screen max-w-6xl mx-auto p-6">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Reef Market</h1>
+        <h1 className="text-2xl font-bold">Browse</h1>
         <nav className="flex gap-2">
           <Link
             href="/browse?market=saltwater"
