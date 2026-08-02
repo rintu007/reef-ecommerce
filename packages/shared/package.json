@@ -12,7 +12,14 @@
     "lint": "echo \"(no lint configured yet)\"",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": "^18 || ^19"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
   "devDependencies": {
+    "@types/react": "^19",
     "typescript": "^5"
   }
 }
