@@ -10,10 +10,12 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "db:seed": "node scripts/seed-remote.mjs"
   },
   "devDependencies": {
-    "turbo": "^2.3.0"
+    "turbo": "^2.3.0",
+    "pg": "^8.13.1"
   },
   "packageManager": "pnpm@9.15.0"
 }

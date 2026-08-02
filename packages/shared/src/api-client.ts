@@ -10,6 +10,8 @@
  * keeps this file from drifting out of sync with what actually exists.
  */
 
+import type { Listing, ListingCreateInput, ListingUpdateInput } from "./types/entities";
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -81,4 +83,61 @@ function safeJsonParse(text: string): unknown {
   } catch {
     return text;
   }
+}
+
+// ============================================================== listings
+
+export interface ListingBrowseParams {
+  market?: "saltwater" | "freshwater" | "both";
+  listing_type?: string;
+  category?: string;
+  q?: string;
+  min_price?: number;
+  max_price?: number;
+  shipping?: "local_pickup" | "shipping";
+  featured?: boolean;
+  seller_id?: string;
+  status?: string;
+  sort?: "newest" | "price_low" | "price_high" | "featured";
+  limit?: number;
+  offset?: number;
+}
+
+export interface ListingLimitStatus {
+  allowed: boolean;
+  usage: { active: number; max: number };
+}
+
+function toQueryString(params: object): string {
+  const usp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    usp.set(key, String(value));
+  }
+  const qs = usp.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function listListings(client: ApiClient, params: ListingBrowseParams = {}) {
+  return client.get<{ listings: Listing[]; total: number }>(`/api/listings${toQueryString(params)}`);
+}
+
+export function getListing(client: ApiClient, id: string) {
+  return client.get<{ listing: Listing }>(`/api/listings/${id}`);
+}
+
+export function createListing(client: ApiClient, input: ListingCreateInput) {
+  return client.post<{ listing: Listing }>("/api/listings", input);
+}
+
+export function updateListing(client: ApiClient, id: string, input: ListingUpdateInput) {
+  return client.patch<{ listing: Listing }>(`/api/listings/${id}`, input);
+}
+
+export function deleteListing(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/listings/${id}`);
+}
+
+export function getListingLimit(client: ApiClient) {
+  return client.get<ListingLimitStatus>("/api/listings/limit");
 }
