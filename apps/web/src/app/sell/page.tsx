@@ -14,6 +14,7 @@ import {
 } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { uploadPhoto } from "@/lib/uploads";
 
 export default function SellPage() {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function SellPage() {
   const [location, setLocation] = useState("");
   const [shippingAvailable, setShippingAvailable] = useState(false);
   const [localPickup, setLocalPickup] = useState(true);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +55,27 @@ export default function SellPage() {
     setCategory("");
   }
 
+  async function handlePhotoSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (files.length === 0) return;
+
+    setUploadingCount((n) => n + files.length);
+    setError(null);
+    try {
+      const uploaded = await Promise.all(files.map((file) => uploadPhoto("listing-photos", file)));
+      setPhotos((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Photo upload failed");
+    } finally {
+      setUploadingCount((n) => n - files.length);
+    }
+  }
+
+  function removePhoto(url: string) {
+    setPhotos((prev) => prev.filter((p) => p !== url));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -68,6 +92,7 @@ export default function SellPage() {
         location: location || undefined,
         shipping_available: shippingAvailable,
         local_pickup: localPickup,
+        photos,
       });
       router.push(`/listings/${listing.id}`);
     } catch (err) {
@@ -155,6 +180,38 @@ export default function SellPage() {
             </select>
           </div>
         )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Photos</label>
+          <div className="flex flex-wrap gap-3">
+            {photos.map((url) => (
+              <div key={url} className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(url)}
+                  className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white text-xs leading-none flex items-center justify-center"
+                  aria-label="Remove photo"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {Array.from({ length: uploadingCount }).map((_, i) => (
+              <div
+                key={`uploading-${i}`}
+                className="w-20 h-20 rounded-lg bg-gray-100 animate-pulse flex items-center justify-center text-xs text-gray-400"
+              >
+                …
+              </div>
+            ))}
+            <label className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-2xl text-gray-400 cursor-pointer hover:border-gray-400">
+              +
+              <input type="file" accept="image/*" multiple onChange={handlePhotoSelect} className="hidden" />
+            </label>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="title">
@@ -249,10 +306,10 @@ export default function SellPage() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || uploadingCount > 0}
           className="w-full rounded-lg bg-blue-600 text-white text-sm font-semibold py-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          {submitting ? "Creating…" : "Create Listing"}
+          {submitting ? "Creating…" : uploadingCount > 0 ? "Uploading photos…" : "Create Listing"}
         </button>
       </form>
     </div>
