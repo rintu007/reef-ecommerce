@@ -3,12 +3,15 @@ import { notFound } from "next/navigation";
 import { LISTING_TYPE_ICONS, LISTING_TYPE_LABELS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getListingById } from "@/lib/server/listings";
+import { getPublicProfile } from "@/lib/server/profiles";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getAuthenticatedUser();
   const listing = await getListingById(id, user);
   if (!listing) notFound();
+
+  const seller = await getPublicProfile(listing.seller_id);
 
   const backMarket = listing.market === "freshwater" ? "freshwater" : "saltwater";
 
@@ -59,6 +62,24 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <p className="mt-4 inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">
               Status: {listing.status}
             </p>
+          )}
+
+          {seller && (
+            <Link
+              href={`/sellers/${seller.id}`}
+              className="mt-6 flex items-center gap-2 text-sm hover:underline w-fit"
+            >
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm overflow-hidden">
+                {seller.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={seller.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  "👤"
+                )}
+              </div>
+              <span className="font-semibold">{seller.display_name ?? "Reef Market User"}</span>
+              {seller.verified_seller && <span className="text-emerald-600">✓</span>}
+            </Link>
           )}
 
           {user && user.id !== listing.seller_id && (

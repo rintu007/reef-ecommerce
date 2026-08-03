@@ -69,6 +69,10 @@ export const profileUpdateSchema = profileSchema
   .partial();
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
+// Public-safe subset for seller storefronts — no email/role/bonus_listing_slots.
+export const publicProfileSchema = profileSchema.omit({ email: true, role: true, bonus_listing_slots: true });
+export type PublicProfile = z.infer<typeof publicProfileSchema>;
+
 // ============================================================== listings
 export const shippingTierSchema = z.object({
   up_to_qty: z.number().int().positive(),

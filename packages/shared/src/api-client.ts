@@ -10,7 +10,16 @@
  * keeps this file from drifting out of sync with what actually exists.
  */
 
-import type { Listing, ListingCreateInput, ListingUpdateInput, Message, SendMessageInput } from "./types/entities";
+import type {
+  Listing,
+  ListingCreateInput,
+  ListingUpdateInput,
+  Message,
+  Profile,
+  ProfileUpdateInput,
+  PublicProfile,
+  SendMessageInput,
+} from "./types/entities";
 
 export class ApiError extends Error {
   status: number;
@@ -175,4 +184,18 @@ export function getConversationMessages(client: ApiClient, conversationId: strin
 
 export function sendMessage(client: ApiClient, input: SendMessageInput) {
   return client.post<{ message: Message }>("/api/messages", input);
+}
+
+// ============================================================== profile
+
+export function getOwnProfile(client: ApiClient) {
+  return client.get<{ profile: Profile }>("/api/profile");
+}
+
+export function updateOwnProfile(client: ApiClient, input: ProfileUpdateInput) {
+  return client.patch<{ profile: Profile }>("/api/profile", input);
+}
+
+export function getPublicProfile(client: ApiClient, id: string) {
+  return client.get<{ profile: PublicProfile }>(`/api/profiles/${id}`);
 }
