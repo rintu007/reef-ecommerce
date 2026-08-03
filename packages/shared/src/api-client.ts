@@ -11,15 +11,18 @@
  */
 
 import type {
+  CheckoutInput,
   Listing,
   ListingCreateInput,
   ListingUpdateInput,
   Message,
+  Order,
   Profile,
   ProfileUpdateInput,
   PublicProfile,
   Report,
   SendMessageInput,
+  ShipOrderInput,
 } from "./types/entities";
 import type { ReportStatus, UserRole } from "./types/enums";
 
@@ -208,6 +211,7 @@ export interface AdminStats {
   listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
   users: { total: number };
   reports: { pending: number };
+  orders: { total: number; completed: number; doa_claim: number };
   visitors: { total: number; last7Days: number; last30Days: number };
 }
 
@@ -249,4 +253,54 @@ export function addToWatchlist(client: ApiClient, listingId: string) {
 
 export function removeFromWatchlist(client: ApiClient, listingId: string) {
   return client.delete<{ saved: false }>(`/api/watchlist/${listingId}`);
+}
+
+// ============================================================== orders / payments
+
+export function getPayoutStatus(client: ApiClient) {
+  return client.get<{ connected: boolean; payoutsEnabled: boolean }>("/api/payouts/status");
+}
+
+export function createPayoutOnboardingLink(client: ApiClient) {
+  return client.post<{ url: string }>("/api/payouts/onboarding-link");
+}
+
+export function checkout(client: ApiClient, input: CheckoutInput) {
+  return client.post<{ order: Order; clientSecret: string | null }>("/api/orders/checkout", input);
+}
+
+export function listOrders(client: ApiClient, role: "buyer" | "seller") {
+  return client.get<{ orders: Order[] }>(`/api/orders?role=${role}`);
+}
+
+export function getOrder(client: ApiClient, id: string) {
+  return client.get<{ order: Order }>(`/api/orders/${id}`);
+}
+
+export function cancelOrder(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/cancel`);
+}
+
+export function shipOrder(client: ApiClient, id: string, input: ShipOrderInput) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/ship`, input);
+}
+
+export function confirmReceipt(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/confirm-receipt`);
+}
+
+export function markPickedUp(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/mark-picked-up`);
+}
+
+export function confirmPickup(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/confirm-pickup`);
+}
+
+export function denyPickup(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/deny-pickup`);
+}
+
+export function refundOrder(client: ApiClient, id: string, mode: "refund" | "store_credit") {
+  return client.post<{ order: Order }>(`/api/admin/orders/${id}/refund`, { mode });
 }

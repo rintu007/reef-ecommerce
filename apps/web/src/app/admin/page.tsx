@@ -33,6 +33,11 @@ export default async function AdminOverviewPage() {
           description={`${stats.reports.pending} pending triage`}
         />
         <AdminNavCard href="/admin/users" title="Users" description={`${stats.users.total} registered`} />
+        <AdminNavCard
+          href="/admin/orders"
+          title="Orders"
+          description={`${stats.orders.total} total · ${stats.orders.doa_claim} refund/credit`}
+        />
       </div>
 
       <div className="mt-8 text-sm text-gray-500">

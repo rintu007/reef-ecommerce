@@ -100,12 +100,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           )}
 
           {user && user.id !== listing.seller_id && (
-            <Link
-              href={`/messages/new?to=${listing.seller_id}&listing=${listing.id}`}
-              className="mt-6 inline-block px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Message Seller
-            </Link>
+            <div className="mt-6 flex gap-3">
+              {listing.status === "active" && (
+                <Link
+                  href={`/listings/${listing.id}/checkout`}
+                  className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Buy Now
+                </Link>
+              )}
+              <Link
+                href={`/messages/new?to=${listing.seller_id}&listing=${listing.id}`}
+                className="px-5 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Message Seller
+              </Link>
+            </div>
           )}
         </div>
       </div>

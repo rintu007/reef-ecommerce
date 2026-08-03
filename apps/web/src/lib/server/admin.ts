@@ -5,6 +5,7 @@ export interface AdminStats {
   listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
   users: { total: number };
   reports: { pending: number };
+  orders: { total: number; completed: number; doa_claim: number };
   visitors: { total: number; last7Days: number; last30Days: number };
 }
 
@@ -23,6 +24,9 @@ export async function getAdminStats(): Promise<AdminStats> {
     { count: listingsRemoved },
     { count: usersTotal },
     { count: reportsPending },
+    { count: ordersTotal },
+    { count: ordersCompleted },
+    { count: ordersDoaClaim },
     { count: visitorsTotal },
     { count: visitors7d },
     { count: visitors30d },
@@ -34,6 +38,9 @@ export async function getAdminStats(): Promise<AdminStats> {
     db.from("listings").select("id", { count: "exact", head: true }).eq("status", "removed"),
     db.from("profiles").select("id", { count: "exact", head: true }),
     db.from("reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    db.from("orders").select("id", { count: "exact", head: true }),
+    db.from("orders").select("id", { count: "exact", head: true }).eq("status", "completed"),
+    db.from("orders").select("id", { count: "exact", head: true }).eq("status", "doa_claim"),
     db.from("visitor_logs").select("id", { count: "exact", head: true }),
     db.from("visitor_logs").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
     db.from("visitor_logs").select("id", { count: "exact", head: true }).gte("created_at", thirtyDaysAgo),
@@ -49,6 +56,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     },
     users: { total: usersTotal ?? 0 },
     reports: { pending: reportsPending ?? 0 },
+    orders: { total: ordersTotal ?? 0, completed: ordersCompleted ?? 0, doa_claim: ordersDoaClaim ?? 0 },
     visitors: { total: visitorsTotal ?? 0, last7Days: visitors7d ?? 0, last30Days: visitors30d ?? 0 },
   };
 }

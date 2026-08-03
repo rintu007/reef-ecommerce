@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ApiAuthError } from "./auth";
+import { OrderError } from "./orders";
 
 export function apiError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -8,7 +9,7 @@ export function apiError(message: string, status: number) {
 
 /** Central catch-all for Route Handlers — maps known error types to the right HTTP status. */
 export function handleRouteError(error: unknown) {
-  if (error instanceof ApiAuthError) {
+  if (error instanceof ApiAuthError || error instanceof OrderError) {
     return apiError(error.message, error.status);
   }
   if (error instanceof ZodError) {

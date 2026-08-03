@@ -27,6 +27,9 @@ export const env = {
   get stripeWebhookSecret() {
     return required("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET);
   },
+  get appUrl() {
+    return required("NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL);
+  },
   get resendApiKey() {
     return required("RESEND_API_KEY", process.env.RESEND_API_KEY);
   },

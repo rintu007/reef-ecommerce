@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getOwnProfile, updateOwnProfile, ApiError, type Profile } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 import { uploadPhoto } from "@/lib/uploads";
+import { PayoutsSection } from "./PayoutsSection";
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -93,6 +94,10 @@ export default function ProfilePage() {
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">My Profile</h1>
+
+      <div className="mb-6">
+        <PayoutsSection />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

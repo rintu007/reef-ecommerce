@@ -209,6 +209,20 @@ export const orderSchema = z.object({
 });
 export type Order = z.infer<typeof orderSchema>;
 
+export const checkoutInputSchema = z.object({
+  listing_id: uuid(),
+  quantity: z.number().int().positive(),
+  shipping_method: orderShippingMethodSchema,
+  pickup_time: z.string().optional(),
+});
+export type CheckoutInput = z.infer<typeof checkoutInputSchema>;
+
+export const shipOrderInputSchema = z.object({
+  tracking_number: z.string().min(1),
+  carrier: z.string().optional(),
+});
+export type ShipOrderInput = z.infer<typeof shipOrderInputSchema>;
+
 // ============================================================== conversations / messages
 export const conversationSchema = z.object({
   id: uuid(),
