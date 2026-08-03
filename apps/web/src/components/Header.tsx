@@ -33,6 +33,12 @@ export async function Header() {
                 Messages
               </Link>
               <Link
+                href="/saved"
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Saved
+              </Link>
+              <Link
                 href="/profile"
                 className="px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
               >

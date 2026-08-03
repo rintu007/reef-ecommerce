@@ -236,3 +236,17 @@ export function listAdminReports(client: ApiClient, params: { status?: ReportSta
 export function updateReportStatus(client: ApiClient, id: string, status: ReportStatus) {
   return client.patch<{ report: Report }>(`/api/admin/reports/${id}`, { status });
 }
+
+// ============================================================== watchlist
+
+export function listWatchlist(client: ApiClient) {
+  return client.get<{ listings: Listing[] }>("/api/watchlist");
+}
+
+export function addToWatchlist(client: ApiClient, listingId: string) {
+  return client.post<{ saved: true }>("/api/watchlist", { listing_id: listingId });
+}
+
+export function removeFromWatchlist(client: ApiClient, listingId: string) {
+  return client.delete<{ saved: false }>(`/api/watchlist/${listingId}`);
+}

@@ -4,6 +4,8 @@ import { LISTING_TYPE_ICONS, LISTING_TYPE_LABELS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getListingById } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
+import { listSavedListingIds } from "@/lib/server/watchlist";
+import { SaveButton } from "@/components/SaveButton";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,7 +13,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const listing = await getListingById(id, user);
   if (!listing) notFound();
 
-  const seller = await getPublicProfile(listing.seller_id);
+  const [seller, savedIds] = await Promise.all([
+    getPublicProfile(listing.seller_id),
+    user ? listSavedListingIds(user.id) : Promise.resolve<string[]>([]),
+  ]);
+  const isSaved = savedIds.includes(listing.id);
 
   const backMarket = listing.market === "freshwater" ? "freshwater" : "saltwater";
 
@@ -32,11 +38,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         </div>
 
         <div>
-          <p className="text-xs text-gray-500">
-            {LISTING_TYPE_LABELS[listing.listing_type]}
-            {listing.category ? ` · ${listing.category}` : ""}
-          </p>
-          <h1 className="text-2xl font-bold mt-1">{listing.title}</h1>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs text-gray-500">
+                {LISTING_TYPE_LABELS[listing.listing_type]}
+                {listing.category ? ` · ${listing.category}` : ""}
+              </p>
+              <h1 className="text-2xl font-bold mt-1">{listing.title}</h1>
+            </div>
+            {user && (
+              <SaveButton
+                listingId={listing.id}
+                initialSaved={isSaved}
+                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg hover:bg-gray-200 transition-colors shrink-0"
+              />
+            )}
+          </div>
           <p className="text-2xl font-bold text-blue-600 mt-2">${listing.price.toFixed(2)}</p>
 
           {listing.description && (

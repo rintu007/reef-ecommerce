@@ -1,20 +1,39 @@
 import Link from "next/link";
 import { LISTING_TYPE_ICONS, LISTING_TYPE_LABELS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
-import { queryListings } from "@/lib/server/listings";
+import { queryListings, type ListingQueryParams } from "@/lib/server/listings";
+import { listSavedListingIds } from "@/lib/server/watchlist";
+import { SaveButton } from "@/components/SaveButton";
+import { BrowseFilters } from "./BrowseFilters";
 
 type Market = "saltwater" | "freshwater";
 
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: Promise<{ market?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
   const market: Market = sp.market === "freshwater" ? "freshwater" : "saltwater";
 
+  const params: ListingQueryParams = {
+    market,
+    listingType: sp.listing_type || undefined,
+    category: sp.category || undefined,
+    q: sp.q || undefined,
+    minPrice: sp.min_price ? Number(sp.min_price) : undefined,
+    maxPrice: sp.max_price ? Number(sp.max_price) : undefined,
+    shipping: sp.shipping === "local_pickup" || sp.shipping === "shipping" ? sp.shipping : undefined,
+    sort: (sp.sort as ListingQueryParams["sort"]) || "newest",
+    limit: 24,
+  };
+
   const user = await getAuthenticatedUser();
-  const { listings, total } = await queryListings({ market, limit: 24, sort: "newest" }, user);
+  const [{ listings, total }, savedIds] = await Promise.all([
+    queryListings(params, user),
+    user ? listSavedListingIds(user.id) : Promise.resolve<string[]>([]),
+  ]);
+  const savedSet = new Set(savedIds);
 
   return (
     <div className="min-h-screen max-w-6xl mx-auto p-6">
@@ -40,14 +59,16 @@ export default async function BrowsePage({
         </nav>
       </header>
 
+      <BrowseFilters market={market} />
+
       <p className="text-sm text-gray-500 mb-4">
         {total} listing{total === 1 ? "" : "s"}
       </p>
 
       {listings.length === 0 ? (
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-1">No listings yet</p>
-          <p className="text-sm">Be the first to list something in this market.</p>
+          <p className="text-lg mb-1">No listings match your filters</p>
+          <p className="text-sm">Try widening your search.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -55,7 +76,7 @@ export default async function BrowsePage({
             <Link
               key={listing.id}
               href={`/listings/${listing.id}`}
-              className="rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-md transition-shadow"
+              className="relative rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-md transition-shadow"
             >
               <div className="aspect-square bg-gray-100 flex items-center justify-center text-4xl">
                 {listing.photos[0] ? (
@@ -65,6 +86,11 @@ export default async function BrowsePage({
                   <span>{LISTING_TYPE_ICONS[listing.listing_type]}</span>
                 )}
               </div>
+              {user && (
+                <div className="absolute top-2 right-2">
+                  <SaveButton listingId={listing.id} initialSaved={savedSet.has(listing.id)} />
+                </div>
+              )}
               <div className="p-3">
                 <p className="text-xs text-gray-500">{LISTING_TYPE_LABELS[listing.listing_type]}</p>
                 <p className="font-semibold text-sm truncate">{listing.title}</p>
