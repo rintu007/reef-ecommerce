@@ -60,6 +60,15 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               Status: {listing.status}
             </p>
           )}
+
+          {user && user.id !== listing.seller_id && (
+            <Link
+              href={`/messages/new?to=${listing.seller_id}&listing=${listing.id}`}
+              className="mt-6 inline-block px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Message Seller
+            </Link>
+          )}
         </div>
       </div>
     </div>

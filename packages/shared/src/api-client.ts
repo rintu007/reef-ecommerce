@@ -10,7 +10,7 @@
  * keeps this file from drifting out of sync with what actually exists.
  */
 
-import type { Listing, ListingCreateInput, ListingUpdateInput } from "./types/entities";
+import type { Listing, ListingCreateInput, ListingUpdateInput, Message, SendMessageInput } from "./types/entities";
 
 export class ApiError extends Error {
   status: number;
@@ -140,4 +140,39 @@ export function deleteListing(client: ApiClient, id: string) {
 
 export function getListingLimit(client: ApiClient) {
   return client.get<ListingLimitStatus>("/api/listings/limit");
+}
+
+// ============================================================== messaging
+
+export interface ConversationSummary {
+  id: string;
+  listing_id: string | null;
+  last_message_at: string | null;
+  created_at: string;
+  other_participant: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  last_message: { content: string; sender_id: string; created_at: string } | null;
+  unread_count: number;
+}
+
+export function listConversations(client: ApiClient) {
+  return client.get<{ conversations: ConversationSummary[] }>("/api/conversations");
+}
+
+export interface ConversationThread {
+  id: string;
+  listing_id: string | null;
+  other_participant: { id: string; display_name: string | null; avatar_url: string | null };
+  messages: Message[];
+}
+
+export function getConversationMessages(client: ApiClient, conversationId: string) {
+  return client.get<ConversationThread>(`/api/conversations/${conversationId}/messages`);
+}
+
+export function sendMessage(client: ApiClient, input: SendMessageInput) {
+  return client.post<{ message: Message }>("/api/messages", input);
 }

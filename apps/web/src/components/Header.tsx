@@ -26,6 +26,12 @@ export async function Header() {
               >
                 My Listings
               </Link>
+              <Link
+                href="/messages"
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Messages
+              </Link>
               <SignOutButton />
             </>
           ) : (
