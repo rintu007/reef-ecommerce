@@ -46,3 +46,6 @@ out
 # Supabase local dev
 supabase/.branches
 supabase/.temp
+
+.vercel
+.env*
