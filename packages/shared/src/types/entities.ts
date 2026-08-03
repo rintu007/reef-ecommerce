@@ -151,7 +151,11 @@ export const listingCreateSchema = listingSchema
     doa_policy: true, doa_policy_custom: true, currency: true, market: true,
   });
 export type ListingCreateInput = z.infer<typeof listingCreateSchema>;
-export const listingUpdateSchema = listingCreateSchema.partial();
+// status is intentionally absent from listingCreateSchema (POST always creates
+// as "active" — see api/listings/route.ts) but PATCH needs it for moderation
+// (admin approve/remove) and seller self-service (mark sold), so it's added
+// back here rather than to the base create schema.
+export const listingUpdateSchema = listingCreateSchema.partial().extend({ status: listingStatusSchema.optional() });
 export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 
 // ============================================================== services

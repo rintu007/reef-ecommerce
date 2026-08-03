@@ -38,6 +38,14 @@ export async function Header() {
               >
                 Profile
               </Link>
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 rounded-full text-sm font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
               <SignOutButton />
             </>
           ) : (

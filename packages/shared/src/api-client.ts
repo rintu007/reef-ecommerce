@@ -18,8 +18,10 @@ import type {
   Profile,
   ProfileUpdateInput,
   PublicProfile,
+  Report,
   SendMessageInput,
 } from "./types/entities";
+import type { ReportStatus, UserRole } from "./types/enums";
 
 export class ApiError extends Error {
   status: number;
@@ -198,4 +200,39 @@ export function updateOwnProfile(client: ApiClient, input: ProfileUpdateInput) {
 
 export function getPublicProfile(client: ApiClient, id: string) {
   return client.get<{ profile: PublicProfile }>(`/api/profiles/${id}`);
+}
+
+// ============================================================== admin
+
+export interface AdminStats {
+  listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
+  users: { total: number };
+  reports: { pending: number };
+  visitors: { total: number; last7Days: number; last30Days: number };
+}
+
+export function getAdminStats(client: ApiClient) {
+  return client.get<AdminStats>("/api/admin/stats");
+}
+
+export function listAdminUsers(client: ApiClient, params: { q?: string; limit?: number; offset?: number } = {}) {
+  return client.get<{ users: Profile[]; total: number }>(`/api/admin/users${toQueryString(params)}`);
+}
+
+export function updateUserRole(client: ApiClient, id: string, role: UserRole) {
+  return client.patch<{ profile: Profile }>(`/api/admin/users/${id}`, { role });
+}
+
+export interface AdminReport extends Report {
+  reporter: { id: string; display_name: string | null; email: string } | null;
+  reported: { id: string; display_name: string | null; email: string } | null;
+  listing: { id: string; title: string } | null;
+}
+
+export function listAdminReports(client: ApiClient, params: { status?: ReportStatus; limit?: number; offset?: number } = {}) {
+  return client.get<{ reports: AdminReport[]; total: number }>(`/api/admin/reports${toQueryString(params)}`);
+}
+
+export function updateReportStatus(client: ApiClient, id: string, status: ReportStatus) {
+  return client.patch<{ report: Report }>(`/api/admin/reports/${id}`, { status });
 }
