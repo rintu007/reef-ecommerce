@@ -19,7 +19,15 @@ export async function Header() {
             + Sell
           </Link>
           {user ? (
-            <SignOutButton />
+            <>
+              <Link
+                href="/my-listings"
+                className="px-4 py-2 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                My Listings
+              </Link>
+              <SignOutButton />
+            </>
           ) : (
             <Link
               href="/sign-in"
