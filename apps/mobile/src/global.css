@@ -2,12 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Same design language as legacy/vite-app/src/index.css (shadcn-style HSL
+ * tokens, Inter font, rounded-xl cards) — converted to hex custom properties
+ * since NativeWind resolves colors at build time and doesn't support the
+ * `hsl(var(--x) / <alpha-value>)` web-only alpha trick reliably on native.
+ */
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  --color-background: #f8fafc;
+  --color-foreground: #171d26;
+  --color-card: #ffffff;
+  --color-card-foreground: #171d26;
+  --color-primary: #0b81b7;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eef2f6;
+  --color-secondary-foreground: #29323d;
+  --color-muted: #e9edf1;
+  --color-muted-foreground: #6c7c93;
+  --color-accent: #ee5f2b;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #dc2828;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e0e6eb;
+  --color-input: #e0e6eb;
+}
+
+.dark {
+  --color-background: #0e131b;
+  --color-foreground: #f0f2f5;
+  --color-card: #161d27;
+  --color-card-foreground: #f0f2f5;
+  --color-primary: #1aa5e6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1f2733;
+  --color-secondary-foreground: #e5e9ed;
+  --color-muted: #1f2733;
+  --color-muted-foreground: #7b8ca0;
+  --color-accent: #ee5f2b;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #7f1d1d;
+  --color-destructive-foreground: #f5f5f5;
+  --color-border: #29313d;
+  --color-input: #29313d;
 }
