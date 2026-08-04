@@ -4,6 +4,7 @@ import { LISTING_TYPE_ICONS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
+import { listReviewsForSeller } from "@/lib/server/reviews";
 
 export default async function SellerStorefrontPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,7 +12,10 @@ export default async function SellerStorefrontPage({ params }: { params: Promise
   if (!profile) notFound();
 
   const viewer = await getAuthenticatedUser();
-  const { listings } = await queryListings({ sellerId: id, status: "active", sort: "newest", limit: 48 }, viewer);
+  const [{ listings }, reviewSummary] = await Promise.all([
+    queryListings({ sellerId: id, status: "active", sort: "newest", limit: 48 }, viewer),
+    listReviewsForSeller(id),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -37,6 +41,12 @@ export default async function SellerStorefrontPage({ params }: { params: Promise
             {[profile.location, profile.country].filter(Boolean).join(", ")}
             {profile.location || profile.country ? " · " : ""}
             {profile.completed_sales_count} completed sales
+            {reviewSummary.count > 0 && (
+              <>
+                {" · "}⭐ {reviewSummary.averageRating?.toFixed(1)} ({reviewSummary.count} review
+                {reviewSummary.count === 1 ? "" : "s"})
+              </>
+            )}
           </p>
           {viewer && viewer.id !== profile.id && (
             <Link
@@ -77,6 +87,23 @@ export default async function SellerStorefrontPage({ params }: { params: Promise
             </Link>
           ))}
         </div>
+      )}
+
+      {reviewSummary.count > 0 && (
+        <>
+          <h2 className="text-lg font-bold mt-10 mb-4">Reviews</h2>
+          <div className="space-y-3">
+            {reviewSummary.reviews.map((review) => (
+              <div key={review.id} className="rounded-xl border border-gray-200 p-3 bg-white">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{review.reviewer?.display_name ?? "Reef Market User"}</span>
+                  <span className="text-yellow-500 text-sm">{"⭐".repeat(review.rating)}</span>
+                </div>
+                {review.comment && <p className="text-sm text-gray-700 mt-1">{review.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -33,7 +33,8 @@ export function AdminReportsTable() {
   }, [status]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
   }, [load]);
 
   async function setReportStatus(id: string, newStatus: ReportStatus) {

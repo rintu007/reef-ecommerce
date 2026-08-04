@@ -178,6 +178,16 @@ export const serviceSchema = z.object({
 });
 export type Service = z.infer<typeof serviceSchema>;
 
+export const serviceCreateSchema = serviceSchema
+  .omit({ id: true, provider_id: true, created_at: true, updated_at: true, status: true })
+  .partial({
+    description: true, price_range: true, location: true, service_area: true,
+    ships_nationwide: true, photos: true, contact_info: true, market: true,
+  });
+export type ServiceCreateInput = z.infer<typeof serviceCreateSchema>;
+export const serviceUpdateSchema = serviceCreateSchema.partial().extend({ status: serviceStatusSchema.optional() });
+export type ServiceUpdateInput = z.infer<typeof serviceUpdateSchema>;
+
 // ============================================================== orders
 export const orderSchema = z.object({
   id: uuid(),

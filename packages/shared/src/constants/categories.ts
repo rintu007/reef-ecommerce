@@ -1,6 +1,6 @@
 // Ported as-is from legacy/vite-app/src/lib/categories.js — backend-agnostic,
 // shared between apps/web and apps/mobile.
-import type { ListingType } from "../types/enums";
+import type { ListingType, ServiceType } from "../types/enums";
 
 export const CORAL_CATEGORIES = [
   "LPS Corals", "SPS Corals", "Soft Corals", "Zoanthids", "Acropora",
@@ -92,6 +92,22 @@ export const LISTING_TYPE_ICONS: Record<ListingType, string> = {
 
 export const SALTWATER_TYPES: ListingType[] = ["coral", "fish", "sw_invert", "equipment"];
 export const FRESHWATER_TYPES: ListingType[] = ["fw_fish", "fw_amphibian", "fw_turtle", "fw_other", "fw_equipment"];
+
+// Ported from legacy/vite-app/src/pages/Services.jsx SERVICE_TYPE_LABELS.
+export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  tank_building: "Custom Tank Building",
+  tank_cleaning_sw: "Saltwater Tank Cleaning",
+  tank_cleaning_fw: "Freshwater Tank Cleaning",
+  aquascaping: "Aquascaping",
+  maintenance: "Regular Maintenance",
+  water_testing: "Water Testing",
+  coral_fragging: "Coral Fragging",
+  fish_sitting: "Fish Sitting",
+  equipment_repair: "Equipment Repair",
+  tank_teardown: "Tank Teardown / Moving",
+  consultation: "Consultation",
+  other: "Other",
+};
 
 export const HELP_CATEGORIES = [
   { value: "beginner_setup", label: "Beginner Reef Tank Setup", icon: "🐠" },

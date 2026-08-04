@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getOrderById } from "@/lib/server/orders";
+import { hasReviewed } from "@/lib/server/reviews";
 import { OrderActions } from "./OrderActions";
+import { ReviewForm } from "./ReviewForm";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,6 +16,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const role: "buyer" | "seller" | "admin" =
     user.role === "admin" ? "admin" : order.buyer_id === user.id ? "buyer" : "seller";
+
+  const canReview =
+    role === "buyer" && order.status === "completed" && order.listing_id
+      ? !(await hasReviewed(user.id, order.listing_id))
+      : false;
 
   return (
     <div className="max-w-lg mx-auto p-6">
@@ -70,6 +77,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </dl>
 
         <OrderActions order={order} role={role} />
+        {canReview && order.listing_id && <ReviewForm listingId={order.listing_id} />}
       </div>
     </div>
   );

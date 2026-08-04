@@ -36,7 +36,8 @@ export function AdminListingsTable() {
   }, [status]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
   }, [load]);
 
   async function approve(id: string) {

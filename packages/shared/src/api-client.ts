@@ -21,7 +21,12 @@ import type {
   ProfileUpdateInput,
   PublicProfile,
   Report,
+  Review,
+  ReviewCreateInput,
   SendMessageInput,
+  Service,
+  ServiceCreateInput,
+  ServiceUpdateInput,
   ShipOrderInput,
 } from "./types/entities";
 import type { ReportStatus, UserRole } from "./types/enums";
@@ -154,6 +159,37 @@ export function deleteListing(client: ApiClient, id: string) {
 
 export function getListingLimit(client: ApiClient) {
   return client.get<ListingLimitStatus>("/api/listings/limit");
+}
+
+// ============================================================== services
+
+export interface ServiceBrowseParams {
+  market?: "saltwater" | "freshwater";
+  service_type?: string;
+  provider_id?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export function listServices(client: ApiClient, params: ServiceBrowseParams = {}) {
+  return client.get<{ services: Service[]; total: number }>(`/api/services${toQueryString(params)}`);
+}
+
+export function getService(client: ApiClient, id: string) {
+  return client.get<{ service: Service }>(`/api/services/${id}`);
+}
+
+export function createService(client: ApiClient, input: ServiceCreateInput) {
+  return client.post<{ service: Service }>("/api/services", input);
+}
+
+export function updateService(client: ApiClient, id: string, input: ServiceUpdateInput) {
+  return client.patch<{ service: Service }>(`/api/services/${id}`, input);
+}
+
+export function deleteService(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/services/${id}`);
 }
 
 // ============================================================== messaging
@@ -303,4 +339,20 @@ export function denyPickup(client: ApiClient, id: string) {
 
 export function refundOrder(client: ApiClient, id: string, mode: "refund" | "store_credit") {
   return client.post<{ order: Order }>(`/api/admin/orders/${id}/refund`, { mode });
+}
+
+// ============================================================== reviews
+
+export function createReview(client: ApiClient, input: ReviewCreateInput) {
+  return client.post<{ review: Review }>("/api/reviews", input);
+}
+
+export interface SellerReviewSummary {
+  reviews: (Review & { reviewer: { id: string; display_name: string | null; avatar_url: string | null } | null })[];
+  averageRating: number | null;
+  count: number;
+}
+
+export function getSellerReviews(client: ApiClient, sellerId: string) {
+  return client.get<SellerReviewSummary>(`/api/sellers/${sellerId}/reviews`);
 }
