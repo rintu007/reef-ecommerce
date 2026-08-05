@@ -360,13 +360,15 @@ export default function ListingDetailScreen() {
                   <Store size={13} color={themeColors.foreground} />
                   <Text className="text-xs font-semibold text-foreground">Store</Text>
                 </Pressable>
-                <Pressable
-                  onPress={() => notify("Coming soon", "Messaging lands in a later milestone.")}
-                  className="flex-row items-center gap-1 border border-border rounded-xl h-8 px-2.5"
-                >
-                  <MessageCircle size={13} color={themeColors.foreground} />
-                  <Text className="text-xs font-semibold text-foreground">Message</Text>
-                </Pressable>
+                {session && session.user.id !== listing.seller_id && (
+                  <Pressable
+                    onPress={() => router.push(`/messages/new?to=${listing.seller_id}&listing=${listing.id}`)}
+                    className="flex-row items-center gap-1 border border-border rounded-xl h-8 px-2.5"
+                  >
+                    <MessageCircle size={13} color={themeColors.foreground} />
+                    <Text className="text-xs font-semibold text-foreground">Message</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
 
