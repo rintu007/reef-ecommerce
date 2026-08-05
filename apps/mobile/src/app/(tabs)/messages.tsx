@@ -5,7 +5,9 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
+import { AuthGate } from "@/components/AuthGate";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -19,10 +21,12 @@ function timeAgo(iso: string | null): string {
 }
 
 export default function MessagesScreen() {
+  const { session } = useAuth();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!session) return;
     setLoading(true);
     try {
       const { conversations } = await listConversations(apiClient);
@@ -30,7 +34,7 @@ export default function MessagesScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +42,10 @@ export default function MessagesScreen() {
       return () => clearTimeout(timer);
     }, [load]),
   );
+
+  if (!session) {
+    return <AuthGate title="Sign in to message sellers" message="Create an account to contact sellers and track conversations." />;
+  }
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">

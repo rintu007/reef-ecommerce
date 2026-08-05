@@ -1,11 +1,17 @@
-import { Redirect, Tabs } from "expo-router";
+import { Tabs } from "expo-router";
 import { MessageCircle, PlusCircle, Search, ShoppingBag, User } from "lucide-react-native";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 
+/**
+ * Browse (and the top-level /learn route) work for guests too, matching
+ * legacy's guest bottom nav (Home/Search/Learn) — only Sell/Messages/Orders/
+ * Profile require a session, gated per-screen via AuthGate instead of
+ * redirecting the whole tab group like before.
+ */
 export default function TabsLayout() {
-  const { session, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,8 +20,6 @@ export default function TabsLayout() {
       </View>
     );
   }
-
-  if (!session) return <Redirect href="/(auth)/sign-in" />;
 
   return (
     <Tabs

@@ -5,7 +5,9 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
+import { AuthGate } from "@/components/AuthGate";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   pending: { bg: "#f3f4f6", text: "#374151" },
@@ -20,12 +22,14 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 };
 
 export default function OrdersScreen() {
+  const { session } = useAuth();
   const [tab, setTab] = useState<"purchases" | "sales">("purchases");
   const [purchases, setPurchases] = useState<Order[]>([]);
   const [sales, setSales] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!session) return;
     setLoading(true);
     try {
       const [purchasesRes, salesRes] = await Promise.all([listOrders(apiClient, "buyer"), listOrders(apiClient, "seller")]);
@@ -34,7 +38,7 @@ export default function OrdersScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,6 +46,10 @@ export default function OrdersScreen() {
       return () => clearTimeout(timer);
     }, [load]),
   );
+
+  if (!session) {
+    return <AuthGate title="Sign in to view orders" message="Create an account to track your purchases and sales." />;
+  }
 
   const orders = tab === "purchases" ? purchases : sales;
 

@@ -6,6 +6,7 @@ import { Heart, LogOut, Wrench } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AuthGate } from "@/components/AuthGate";
 import { PayoutsSection } from "@/components/PayoutsSection";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
@@ -37,6 +38,10 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!session) {
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(timer);
+    }
     getOwnProfile(apiClient)
       .then(({ profile }) => {
         setProfile(profile);
@@ -47,7 +52,7 @@ export default function ProfileScreen() {
         setAvatarUrl(profile.avatar_url);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [session]);
 
   async function handleAvatarPick() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
@@ -94,6 +99,10 @@ export default function ProfileScreen() {
         <ActivityIndicator color={themeColors.primary} />
       </SafeAreaView>
     );
+  }
+
+  if (!session) {
+    return <AuthGate title="Sign in to view your profile" message="Create an account to manage your listings, payouts, and account settings." />;
   }
 
   return (

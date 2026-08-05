@@ -425,7 +425,11 @@ export default function ListingDetailScreen() {
             <Text className="text-sm font-bold text-foreground">Store</Text>
           </Pressable>
           <Pressable
-            onPress={() => router.push(`/listing/${listing.id}/checkout`)}
+            onPress={() =>
+              session
+                ? router.push(`/listing/${listing.id}/checkout`)
+                : router.push("/(auth)/sign-in")
+            }
             disabled={listing.status !== "active" || listing.quantity <= 0 || listing.seller_id === session?.user.id}
             className={`flex-1 h-12 rounded-xl items-center justify-center flex-row gap-2 ${
               listing.status !== "active" || listing.quantity <= 0 || listing.seller_id === session?.user.id ? "bg-muted" : "bg-primary"

@@ -9,6 +9,7 @@ import { apiClient } from "@/lib/api-client";
 import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
+import { AuthGate } from "@/components/AuthGate";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   active: { bg: "#d1fae5", text: "#065f46" },
@@ -44,6 +45,10 @@ export default function SellScreen() {
       return () => clearTimeout(timer);
     }, [load]),
   );
+
+  if (!session) {
+    return <AuthGate title="Sign in to sell" message="Create an account to list corals, fish, and equipment for sale." />;
+  }
 
   async function handleDelete(listing: Listing) {
     const confirmed = await confirmAsync("Delete this listing?", "This can't be undone.", "Delete");
