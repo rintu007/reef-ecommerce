@@ -1,26 +1,192 @@
+import { getOwnProfile, updateOwnProfile, type Profile } from "@reef-market/shared";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { LogOut } from "lucide-react-native";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PayoutsSection } from "@/components/PayoutsSection";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { themeColors } from "@/lib/theme-colors";
+import { uploadPhotoFromUri } from "@/lib/uploads";
+
+function FieldLabel({ children }: { children: string }) {
+  return <Text className="text-sm font-medium text-muted-foreground mb-1">{children}</Text>;
+}
+
+const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground";
 
 export default function ProfileScreen() {
   const { session } = useAuth();
 
-  return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-background px-6 pt-6">
-      <View className="w-16 h-16 rounded-full items-center justify-center mb-4" style={{ backgroundColor: "#0b81b71a" }}>
-        <Text className="text-2xl font-bold text-primary">{(session?.user.email ?? "?")[0]?.toUpperCase()}</Text>
-      </View>
-      <Text className="text-sm text-muted-foreground mb-1">Signed in as</Text>
-      <Text className="text-base font-semibold text-foreground mb-6">{session?.user.email}</Text>
-      <Text className="text-muted-foreground mb-6">Full profile editing — coming in M5</Text>
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [location, setLocation] = useState("");
+  const [country, setCountry] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-      <Pressable onPress={() => supabase.auth.signOut()} className="flex-row items-center justify-center gap-2 bg-muted rounded-xl py-3">
-        <LogOut size={16} color={themeColors.foreground} />
-        <Text className="font-semibold text-sm text-foreground">Sign Out</Text>
-      </Pressable>
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getOwnProfile(apiClient)
+      .then(({ profile }) => {
+        setProfile(profile);
+        setDisplayName(profile.display_name ?? "");
+        setBio(profile.bio ?? "");
+        setLocation(profile.location ?? "");
+        setCountry(profile.country ?? "");
+        setAvatarUrl(profile.avatar_url);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleAvatarPick() {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (result.canceled || result.assets.length === 0) return;
+
+    setUploadingAvatar(true);
+    setError(null);
+    try {
+      const asset = result.assets[0];
+      const ext = asset.fileName?.match(/\.[a-zA-Z0-9]{1,8}$/)?.[0] ?? ".jpg";
+      const url = await uploadPhotoFromUri("avatars", asset.uri, `avatar${ext}`);
+      setAvatarUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Avatar upload failed");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleSave() {
+    setError(null);
+    setSaved(false);
+    setSaving(true);
+    try {
+      const { profile: updated } = await updateOwnProfile(apiClient, {
+        display_name: displayName || null,
+        bio: bio || null,
+        location: location || null,
+        country: country || null,
+        avatar_url: avatarUrl,
+      });
+      setProfile(updated);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator color={themeColors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+        <Text className="text-xl font-bold text-foreground">My Profile</Text>
+
+        <PayoutsSection />
+
+        <View>
+          <FieldLabel>Avatar</FieldLabel>
+          <View className="flex-row items-center gap-4">
+            <View className="w-16 h-16 rounded-full overflow-hidden bg-muted items-center justify-center">
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={{ width: 64, height: 64 }} contentFit="cover" />
+              ) : (
+                <Text className="text-2xl">👤</Text>
+              )}
+            </View>
+            <Pressable onPress={handleAvatarPick} disabled={uploadingAvatar} className="border border-border rounded-xl px-4 py-2.5">
+              {uploadingAvatar ? (
+                <ActivityIndicator color={themeColors.primary} />
+              ) : (
+                <Text className="text-sm font-semibold text-foreground">Change Avatar</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        <View>
+          <FieldLabel>Display Name</FieldLabel>
+          <TextInput value={displayName} onChangeText={setDisplayName} className={inputClassName} placeholderTextColor={themeColors.mutedForeground} />
+        </View>
+
+        <View>
+          <FieldLabel>Bio</FieldLabel>
+          <TextInput
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            className={inputClassName}
+            style={{ minHeight: 90 }}
+            placeholderTextColor={themeColors.mutedForeground}
+          />
+        </View>
+
+        <View className="flex-row gap-4">
+          <View className="flex-1">
+            <FieldLabel>Location</FieldLabel>
+            <TextInput
+              value={location}
+              onChangeText={setLocation}
+              placeholder="City, State"
+              className={inputClassName}
+              placeholderTextColor={themeColors.mutedForeground}
+            />
+          </View>
+          <View className="flex-1">
+            <FieldLabel>Country</FieldLabel>
+            <TextInput
+              value={country}
+              onChangeText={setCountry}
+              placeholder="US"
+              className={inputClassName}
+              placeholderTextColor={themeColors.mutedForeground}
+            />
+          </View>
+        </View>
+
+        {profile && (
+          <View className="flex-row items-center gap-3">
+            {profile.verified_seller && (
+              <View className="bg-emerald-100 rounded-full px-2.5 py-1">
+                <Text className="text-xs font-semibold text-emerald-800">✓ Verified Seller</Text>
+              </View>
+            )}
+            <Text className="text-sm text-muted-foreground">{profile.completed_sales_count} completed sales</Text>
+          </View>
+        )}
+
+        {error && <Text className="text-sm text-destructive">{error}</Text>}
+        {saved && <Text className="text-sm text-emerald-600">Saved.</Text>}
+
+        <Pressable onPress={handleSave} disabled={saving || uploadingAvatar} className="bg-primary rounded-xl py-3 items-center">
+          {saving ? <ActivityIndicator color={themeColors.white} /> : <Text className="font-semibold text-sm text-white">Save Changes</Text>}
+        </Pressable>
+
+        <Text className="text-sm text-muted-foreground mt-2">{session?.user.email}</Text>
+        <Pressable onPress={() => supabase.auth.signOut()} className="flex-row items-center justify-center gap-2 bg-muted rounded-xl py-3">
+          <LogOut size={16} color={themeColors.foreground} />
+          <Text className="font-semibold text-sm text-foreground">Sign Out</Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -31,7 +31,6 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
-import { notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
@@ -354,7 +353,7 @@ export default function ListingDetailScreen() {
               </View>
               <View className="flex-row gap-2">
                 <Pressable
-                  onPress={() => notify("Coming soon", "Seller storefronts land in a later milestone.")}
+                  onPress={() => router.push(`/sellers/${listing.seller_id}`)}
                   className="flex-row items-center gap-1 border border-border rounded-xl h-8 px-2.5"
                 >
                   <Store size={13} color={themeColors.foreground} />
@@ -419,7 +418,7 @@ export default function ListingDetailScreen() {
       <SafeAreaView edges={["bottom"]} className="absolute bottom-0 left-0 right-0 bg-card border-t border-border px-4 pt-3">
         <View className="flex-row gap-3 pb-3">
           <Pressable
-            onPress={() => notify("Coming soon", "Seller storefronts land in a later milestone.")}
+            onPress={() => router.push(`/sellers/${listing.seller_id}`)}
             className="h-12 px-4 rounded-xl border border-border items-center justify-center flex-row gap-1.5"
           >
             <Store size={16} color={themeColors.foreground} />
