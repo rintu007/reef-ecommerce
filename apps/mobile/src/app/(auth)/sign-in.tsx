@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { BookOpen } from "lucide-react-native";
 import { supabase } from "@/lib/supabase";
 import { themeColors } from "@/lib/theme-colors";
 
@@ -94,6 +96,11 @@ export default function SignInScreen() {
           <Text className="text-sm text-primary text-center">
             {mode === "sign-in" ? "Need an account? Sign up" : "Already have an account? Sign in"}
           </Text>
+        </Pressable>
+
+        <Pressable onPress={() => router.push("/learn")} className="flex-row items-center justify-center gap-1.5 mt-2">
+          <BookOpen size={14} color={themeColors.mutedForeground} />
+          <Text className="text-sm text-muted-foreground text-center">Browse care guides</Text>
         </Pressable>
       </View>
     </SafeAreaView>

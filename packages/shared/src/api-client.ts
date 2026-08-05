@@ -12,6 +12,7 @@
 
 import type {
   CheckoutInput,
+  HelpContent,
   Listing,
   ListingCreateInput,
   ListingUpdateInput,
@@ -190,6 +191,17 @@ export function updateService(client: ApiClient, id: string, input: ServiceUpdat
 
 export function deleteService(client: ApiClient, id: string) {
   return client.delete<{ deleted: true }>(`/api/services/${id}`);
+}
+
+// ============================================================== help content
+
+export interface HelpContentBrowseParams {
+  category?: string;
+  market?: "saltwater" | "freshwater";
+}
+
+export function listHelpContent(client: ApiClient, params: HelpContentBrowseParams = {}) {
+  return client.get<{ items: HelpContent[] }>(`/api/help-content${toQueryString(params)}`);
 }
 
 // ============================================================== messaging
