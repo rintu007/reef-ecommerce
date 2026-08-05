@@ -1,0 +1,240 @@
+import {
+  cancelOrder,
+  confirmPickup,
+  confirmReceipt,
+  createReview,
+  denyPickup,
+  getOrder,
+  markPickedUp,
+  shipOrder,
+  type Order,
+} from "@reef-market/shared";
+import { Image } from "expo-image";
+import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft, Star } from "lucide-react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
+import { themeColors } from "@/lib/theme-colors";
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row justify-between py-1">
+      <Text className="text-sm text-muted-foreground">{label}</Text>
+      <Text className="text-sm font-medium text-foreground">{value}</Text>
+    </View>
+  );
+}
+
+function ReviewForm({ listingId }: { listingId: string }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await createReview(apiClient, { listing_id: listingId, rating, comment: comment || undefined });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (submitted) {
+    return <Text className="text-sm text-emerald-600 pt-3 border-t border-border mt-3">Thanks for your review!</Text>;
+  }
+
+  return (
+    <View className="pt-3 border-t border-border mt-3 gap-2">
+      <Text className="text-sm font-semibold text-foreground">Leave a Review</Text>
+      <View className="flex-row gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Pressable key={star} onPress={() => setRating(star)}>
+            <Star size={26} color="#f59e0b" fill={star <= rating ? "#f59e0b" : "transparent"} />
+          </Pressable>
+        ))}
+      </View>
+      <TextInput
+        value={comment}
+        onChangeText={setComment}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+        placeholder="Optional comment"
+        placeholderTextColor={themeColors.mutedForeground}
+        className="border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground"
+        style={{ minHeight: 70 }}
+      />
+      {error && <Text className="text-sm text-destructive">{error}</Text>}
+      <Pressable onPress={handleSubmit} disabled={submitting} className="self-start bg-primary rounded-xl px-4 py-2.5">
+        <Text className="text-sm font-semibold text-white">{submitting ? "Submitting…" : "Submit Review"}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export default function OrderDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { session } = useAuth();
+
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("");
+
+  const load = useCallback(() => {
+    setLoading(true);
+    return getOrder(apiClient, id)
+      .then(({ order }) => setOrder(order))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Action failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading || !order) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator color={themeColors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const role: "buyer" | "seller" = order.buyer_id === session?.user.id ? "buyer" : "seller";
+  const canReview = role === "buyer" && order.status === "completed" && !!order.listing_id;
+
+  return (
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background">
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
+        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+          <ArrowLeft size={20} color={themeColors.foreground} />
+        </Pressable>
+        <Text className="text-base font-semibold text-foreground">Order Details</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
+        <View className="rounded-xl border border-border bg-card p-4 gap-3">
+          <View className="flex-row gap-3">
+            <View className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
+              {order.listing_photo && <Image source={{ uri: order.listing_photo }} style={{ width: 64, height: 64 }} contentFit="cover" />}
+            </View>
+            <View className="flex-1">
+              {order.listing_id ? (
+                <Link href={`/listing/${order.listing_id}`} asChild>
+                  <Pressable>
+                    <Text className="font-semibold text-sm text-primary" numberOfLines={2}>
+                      {order.listing_title}
+                    </Text>
+                  </Pressable>
+                </Link>
+              ) : (
+                <Text className="font-semibold text-sm text-foreground" numberOfLines={2}>
+                  {order.listing_title}
+                </Text>
+              )}
+              <Text className="text-sm text-muted-foreground">Qty {order.quantity}</Text>
+            </View>
+          </View>
+
+          <View className="border-t border-border pt-2">
+            <Row label="Status" value={order.status.replace("_", " ")} />
+            <Row label="Total charged" value={order.total_charged != null ? `$${order.total_charged.toFixed(2)}` : "—"} />
+            <Row label="Delivery" value={order.shipping_method === "shipping" ? "Shipping" : "Local pickup"} />
+            {order.tracking_number && (
+              <Row label="Tracking" value={order.carrier ? `${order.tracking_number} (${order.carrier})` : order.tracking_number} />
+            )}
+            {order.pickup_address && <Row label="Pickup address" value={order.pickup_address} />}
+            {order.pickup_time && <Row label="Pickup time" value={order.pickup_time} />}
+          </View>
+
+          {error && <Text className="text-sm text-destructive">{error}</Text>}
+
+          {role === "buyer" && order.status === "pending" && (
+            <Pressable onPress={() => run(() => cancelOrder(apiClient, order.id))} disabled={busy} className="self-start bg-red-100 rounded-xl px-4 py-2.5">
+              <Text className="text-sm font-semibold text-red-800">Cancel Order</Text>
+            </Pressable>
+          )}
+
+          {role === "buyer" && (order.status === "confirmed" || order.status === "shipped") && (
+            <Pressable onPress={() => run(() => confirmReceipt(apiClient, order.id))} disabled={busy} className="self-start bg-primary rounded-xl px-4 py-2.5">
+              <Text className="text-sm font-semibold text-white">Confirm Receipt</Text>
+            </Pressable>
+          )}
+
+          {role === "buyer" && order.status === "awaiting_pickup" && (
+            <View className="flex-row gap-2">
+              <Pressable onPress={() => run(() => confirmPickup(apiClient, order.id))} disabled={busy} className="bg-primary rounded-xl px-4 py-2.5">
+                <Text className="text-sm font-semibold text-white">Confirm Pickup</Text>
+              </Pressable>
+              <Pressable onPress={() => run(() => denyPickup(apiClient, order.id))} disabled={busy} className="bg-red-100 rounded-xl px-4 py-2.5">
+                <Text className="text-sm font-semibold text-red-800">I Didn&apos;t Pick This Up</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {role === "seller" && order.status === "confirmed" && order.shipping_method === "shipping" && (
+            <View className="gap-2">
+              <TextInput
+                value={trackingNumber}
+                onChangeText={setTrackingNumber}
+                placeholder="Tracking number"
+                placeholderTextColor={themeColors.mutedForeground}
+                className="border border-border bg-background rounded-xl px-3 py-2.5 text-sm text-foreground"
+              />
+              <TextInput
+                value={carrier}
+                onChangeText={setCarrier}
+                placeholder="Carrier (optional)"
+                placeholderTextColor={themeColors.mutedForeground}
+                className="border border-border bg-background rounded-xl px-3 py-2.5 text-sm text-foreground"
+              />
+              <Pressable
+                onPress={() => run(() => shipOrder(apiClient, order.id, { tracking_number: trackingNumber, carrier: carrier || undefined }))}
+                disabled={busy || !trackingNumber}
+                className="self-start bg-primary rounded-xl px-4 py-2.5"
+              >
+                <Text className="text-sm font-semibold text-white">Mark Shipped</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {role === "seller" && order.status === "confirmed" && order.shipping_method === "local_pickup" && (
+            <Pressable onPress={() => run(() => markPickedUp(apiClient, order.id))} disabled={busy} className="self-start bg-primary rounded-xl px-4 py-2.5">
+              <Text className="text-sm font-semibold text-white">Mark Picked Up</Text>
+            </Pressable>
+          )}
+
+          {canReview && order.listing_id && <ReviewForm listingId={order.listing_id} />}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

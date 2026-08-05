@@ -7,6 +7,7 @@
     "@expo/ui": "~57.0.9",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@reef-market/shared": "workspace:*",
+    "@stripe/stripe-react-native": "0.64.0",
     "@supabase/supabase-js": "^2.47.10",
     "expo": "~57.0.10",
     "expo-constants": "~57.0.9",

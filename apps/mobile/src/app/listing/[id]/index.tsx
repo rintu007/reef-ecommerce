@@ -426,14 +426,16 @@ export default function ListingDetailScreen() {
             <Text className="text-sm font-bold text-foreground">Store</Text>
           </Pressable>
           <Pressable
-            onPress={() => notify("Coming soon", "Checkout lands in a later milestone.")}
-            disabled={listing.status !== "active" || listing.quantity <= 0}
+            onPress={() => router.push(`/listing/${listing.id}/checkout`)}
+            disabled={listing.status !== "active" || listing.quantity <= 0 || listing.seller_id === session?.user.id}
             className={`flex-1 h-12 rounded-xl items-center justify-center flex-row gap-2 ${
-              listing.status !== "active" || listing.quantity <= 0 ? "bg-muted" : "bg-primary"
+              listing.status !== "active" || listing.quantity <= 0 || listing.seller_id === session?.user.id ? "bg-muted" : "bg-primary"
             }`}
           >
             {listing.status !== "active" || listing.quantity <= 0 ? (
               <Text className="text-base font-bold text-muted-foreground">Out of Stock</Text>
+            ) : listing.seller_id === session?.user.id ? (
+              <Text className="text-base font-bold text-muted-foreground">Your Listing</Text>
             ) : (
               <>
                 <ShoppingBag size={18} color={themeColors.white} />
