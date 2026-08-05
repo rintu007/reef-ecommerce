@@ -418,6 +418,12 @@ export const announcementSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type Announcement = z.infer<typeof announcementSchema>;
+export const announcementCreateSchema = announcementSchema
+  .omit({ id: true, created_at: true, updated_at: true })
+  .partial({ is_active: true, max_views: true, show_to_guests: true });
+export type AnnouncementCreateInput = z.infer<typeof announcementCreateSchema>;
+export const announcementUpdateSchema = announcementCreateSchema.partial();
+export type AnnouncementUpdateInput = z.infer<typeof announcementUpdateSchema>;
 
 export const helpContentSchema = z.object({
   id: uuid(),
@@ -435,3 +441,9 @@ export const helpContentSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type HelpContent = z.infer<typeof helpContentSchema>;
+export const helpContentCreateSchema = helpContentSchema
+  .omit({ id: true, created_at: true, updated_at: true })
+  .partial({ categories: true, youtube_url: true, body: true, thumbnail_url: true, display_order: true, published: true, market: true });
+export type HelpContentCreateInput = z.infer<typeof helpContentCreateSchema>;
+export const helpContentUpdateSchema = helpContentCreateSchema.partial();
+export type HelpContentUpdateInput = z.infer<typeof helpContentUpdateSchema>;

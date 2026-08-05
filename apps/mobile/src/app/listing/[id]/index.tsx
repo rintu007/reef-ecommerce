@@ -428,7 +428,7 @@ export default function ListingDetailScreen() {
             onPress={() =>
               session
                 ? router.push(`/listing/${listing.id}/checkout`)
-                : router.push("/(auth)/sign-in")
+                : router.replace("/(auth)/sign-in")
             }
             disabled={listing.status !== "active" || listing.quantity <= 0 || listing.seller_id === session?.user.id}
             className={`flex-1 h-12 rounded-xl items-center justify-center flex-row gap-2 ${

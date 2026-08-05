@@ -1,9 +1,9 @@
 import { getPublicProfile, getSellerReviews, listListings, type Listing, type PublicProfile, type SellerReviewSummary } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, MessageCircle, Star } from "lucide-react-native";
+import { ArrowLeft, MessageCircle, Share2, Star } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
@@ -51,6 +51,11 @@ export default function SellerStorefrontScreen() {
 
   const meta = [profile.location, profile.country].filter(Boolean).join(", ");
 
+  async function handleShare() {
+    const url = `${process.env.EXPO_PUBLIC_API_URL}/sellers/${id}`;
+    await Share.share({ message: `Check out ${profile?.display_name ?? "this seller"}'s storefront on Reef Market: ${url}`, url });
+  }
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
@@ -58,7 +63,10 @@ export default function SellerStorefrontScreen() {
         <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
-        <Text className="text-base font-semibold text-foreground">Store</Text>
+        <Text className="text-base font-semibold text-foreground flex-1">Store</Text>
+        <Pressable onPress={handleShare} className="w-9 h-9 items-center justify-center">
+          <Share2 size={18} color={themeColors.foreground} />
+        </Pressable>
       </View>
 
       <FlatList

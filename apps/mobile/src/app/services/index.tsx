@@ -1,6 +1,6 @@
 import { SERVICE_TYPE_LABELS, listServices, type Service } from "@reef-market/shared";
 import { Image } from "expo-image";
-import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { Link, Stack, useFocusEffect, useRouter } from "expo-router";
 import { ArrowLeft, Plus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
@@ -90,23 +90,28 @@ export default function ServicesScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <View className="flex-row gap-3 rounded-xl border border-border bg-card p-3">
-              {item.photos[0] && (
-                <View className="w-20 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
-                  <Image source={{ uri: item.photos[0] }} style={{ width: 80, height: 80 }} contentFit="cover" />
+            <Link href={`/services/${item.id}`} asChild>
+              <Pressable className="flex-row gap-3 rounded-xl border border-border bg-card p-3">
+                {item.photos[0] && (
+                  <View className="w-20 h-20 rounded-lg overflow-hidden bg-muted shrink-0">
+                    <Image source={{ uri: item.photos[0] }} style={{ width: 80, height: 80 }} contentFit="cover" />
+                  </View>
+                )}
+                <View className="flex-1 min-w-0">
+                  <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">{SERVICE_TYPE_LABELS[item.service_type]}</Text>
+                  <Text className="text-xs text-muted-foreground mt-1" numberOfLines={1}>
+                    {[item.location, item.service_area && `Serves: ${item.service_area}`].filter(Boolean).join(" · ")}
+                  </Text>
+                  {item.price_range && <Text className="text-xs text-foreground mt-1">{item.price_range}</Text>}
+                  {session?.user.id === item.provider_id && (
+                    <Text className="text-[10px] font-semibold text-primary mt-1">Your service</Text>
+                  )}
                 </View>
-              )}
-              <View className="flex-1 min-w-0">
-                <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text className="text-xs text-muted-foreground">{SERVICE_TYPE_LABELS[item.service_type]}</Text>
-                <Text className="text-xs text-muted-foreground mt-1" numberOfLines={1}>
-                  {[item.location, item.service_area && `Serves: ${item.service_area}`].filter(Boolean).join(" · ")}
-                </Text>
-                {item.price_range && <Text className="text-xs text-foreground mt-1">{item.price_range}</Text>}
-              </View>
-            </View>
+              </Pressable>
+            </Link>
           )}
         />
       )}

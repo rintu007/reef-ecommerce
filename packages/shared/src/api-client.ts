@@ -11,8 +11,13 @@
  */
 
 import type {
+  Announcement,
+  AnnouncementCreateInput,
+  AnnouncementUpdateInput,
   CheckoutInput,
   HelpContent,
+  HelpContentCreateInput,
+  HelpContentUpdateInput,
   Listing,
   ListingCreateInput,
   ListingUpdateInput,
@@ -204,6 +209,12 @@ export function listHelpContent(client: ApiClient, params: HelpContentBrowsePara
   return client.get<{ items: HelpContent[] }>(`/api/help-content${toQueryString(params)}`);
 }
 
+// ============================================================== announcements
+
+export function getActiveAnnouncement(client: ApiClient) {
+  return client.get<{ announcement: Announcement | null }>("/api/announcements");
+}
+
 // ============================================================== messaging
 
 export interface ConversationSummary {
@@ -249,6 +260,10 @@ export function updateOwnProfile(client: ApiClient, input: ProfileUpdateInput) {
   return client.patch<{ profile: Profile }>("/api/profile", input);
 }
 
+export function deleteOwnAccount(client: ApiClient) {
+  return client.delete<{ anonymized: boolean }>("/api/profile");
+}
+
 export function getPublicProfile(client: ApiClient, id: string) {
   return client.get<{ profile: PublicProfile }>(`/api/profiles/${id}`);
 }
@@ -287,6 +302,38 @@ export function listAdminReports(client: ApiClient, params: { status?: ReportSta
 
 export function updateReportStatus(client: ApiClient, id: string, status: ReportStatus) {
   return client.patch<{ report: Report }>(`/api/admin/reports/${id}`, { status });
+}
+
+export function listAdminAnnouncements(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
+  return client.get<{ announcements: Announcement[]; total: number }>(`/api/admin/announcements${toQueryString(params)}`);
+}
+
+export function createAnnouncement(client: ApiClient, input: AnnouncementCreateInput) {
+  return client.post<{ announcement: Announcement }>("/api/admin/announcements", input);
+}
+
+export function updateAnnouncement(client: ApiClient, id: string, input: AnnouncementUpdateInput) {
+  return client.patch<{ announcement: Announcement }>(`/api/admin/announcements/${id}`, input);
+}
+
+export function deleteAnnouncement(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/admin/announcements/${id}`);
+}
+
+export function listAdminHelpContent(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
+  return client.get<{ items: HelpContent[]; total: number }>(`/api/admin/help-content${toQueryString(params)}`);
+}
+
+export function createHelpContent(client: ApiClient, input: HelpContentCreateInput) {
+  return client.post<{ item: HelpContent }>("/api/admin/help-content", input);
+}
+
+export function updateHelpContent(client: ApiClient, id: string, input: HelpContentUpdateInput) {
+  return client.patch<{ item: HelpContent }>(`/api/admin/help-content/${id}`, input);
+}
+
+export function deleteHelpContent(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/admin/help-content/${id}`);
 }
 
 // ============================================================== watchlist

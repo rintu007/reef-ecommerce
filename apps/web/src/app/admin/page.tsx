@@ -38,6 +38,8 @@ export default async function AdminOverviewPage() {
           title="Orders"
           description={`${stats.orders.total} total · ${stats.orders.doa_claim} refund/credit`}
         />
+        <AdminNavCard href="/admin/announcements" title="Announcements" description="Broadcast banner shown on app load" />
+        <AdminNavCard href="/admin/help-content" title="Learn Content" description="Care guides shown on the mobile Learn tab" />
       </div>
 
       <div className="mt-8 text-sm text-gray-500">

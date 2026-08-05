@@ -51,6 +51,7 @@ export default function SignInScreen() {
         <View>
           <Text className="text-sm font-medium text-muted-foreground mb-1">Email</Text>
           <TextInput
+            testID="sign-in-email"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -63,6 +64,7 @@ export default function SignInScreen() {
         <View>
           <Text className="text-sm font-medium text-muted-foreground mb-1">Password</Text>
           <TextInput
+            testID="sign-in-password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

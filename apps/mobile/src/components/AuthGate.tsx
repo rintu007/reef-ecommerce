@@ -12,7 +12,7 @@ export function AuthGate({ title, message }: { title: string; message: string })
         <Text className="text-3xl mb-1">🪸</Text>
         <Text className="text-lg font-bold text-foreground text-center">{title}</Text>
         <Text className="text-sm text-muted-foreground text-center">{message}</Text>
-        <Pressable onPress={() => router.push("/(auth)/sign-in")} className="bg-primary rounded-xl px-6 py-3 mt-2">
+        <Pressable onPress={() => router.replace("/(auth)/sign-in")} className="bg-primary rounded-xl px-6 py-3 mt-2">
           <Text className="text-white font-semibold text-sm">Sign In</Text>
         </Pressable>
       </View>

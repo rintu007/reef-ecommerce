@@ -81,6 +81,9 @@ export default async function ServicesPage({
                   .join(" · ")}
               </p>
               {service.price_range && <p className="text-xs text-gray-700 mt-1">{service.price_range}</p>}
+              {user?.id === service.provider_id && (
+                <p className="text-[10px] font-semibold text-blue-600 mt-1">Your service</p>
+              )}
             </div>
           </Link>
         ))}

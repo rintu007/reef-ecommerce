@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
 import { listReviewsForSeller } from "@/lib/server/reviews";
+import { ShareButton } from "./ShareButton";
 
 export default async function SellerStorefrontPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,14 +49,17 @@ export default async function SellerStorefrontPage({ params }: { params: Promise
               </>
             )}
           </p>
-          {viewer && viewer.id !== profile.id && (
-            <Link
-              href={`/messages/new?to=${profile.id}`}
-              className="mt-2 inline-block text-sm font-semibold text-blue-600 hover:underline"
-            >
-              Message
-            </Link>
-          )}
+          <div className="flex items-center gap-4">
+            {viewer && viewer.id !== profile.id && (
+              <Link
+                href={`/messages/new?to=${profile.id}`}
+                className="mt-2 inline-block text-sm font-semibold text-blue-600 hover:underline"
+              >
+                Message
+              </Link>
+            )}
+            <ShareButton sellerName={profile.display_name ?? "Reef Market seller"} />
+          </div>
         </div>
       </div>
 

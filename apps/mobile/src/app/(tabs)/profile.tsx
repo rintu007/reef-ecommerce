@@ -1,14 +1,15 @@
-import { getOwnProfile, updateOwnProfile, type Profile } from "@reef-market/shared";
+import { deleteOwnAccount, getOwnProfile, updateOwnProfile, LANGUAGES, type LanguageCode, type Profile } from "@reef-market/shared";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { Heart, LogOut, Wrench } from "lucide-react-native";
+import { Heart, LogOut, Plus, Wrench, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthGate } from "@/components/AuthGate";
 import { PayoutsSection } from "@/components/PayoutsSection";
 import { apiClient } from "@/lib/api-client";
+import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { themeColors } from "@/lib/theme-colors";
@@ -30,12 +31,16 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [country, setCountry] = useState("");
+  const [language, setLanguage] = useState<LanguageCode>("en");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [tankPhotos, setTankPhotos] = useState<string[]>([]);
+  const [uploadingTankPhoto, setUploadingTankPhoto] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -49,7 +54,9 @@ export default function ProfileScreen() {
         setBio(profile.bio ?? "");
         setLocation(profile.location ?? "");
         setCountry(profile.country ?? "");
+        setLanguage(profile.language);
         setAvatarUrl(profile.avatar_url);
+        setTankPhotos(profile.tank_photos);
       })
       .finally(() => setLoading(false));
   }, [session]);
@@ -72,6 +79,28 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleAddTankPhoto() {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (result.canceled || result.assets.length === 0) return;
+
+    setUploadingTankPhoto(true);
+    setError(null);
+    try {
+      const asset = result.assets[0];
+      const ext = asset.fileName?.match(/\.[a-zA-Z0-9]{1,8}$/)?.[0] ?? ".jpg";
+      const url = await uploadPhotoFromUri("tank-photos", asset.uri, `tank-${Date.now()}${ext}`);
+      setTankPhotos((prev) => [...prev, url]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tank photo upload failed");
+    } finally {
+      setUploadingTankPhoto(false);
+    }
+  }
+
+  function handleRemoveTankPhoto(url: string) {
+    setTankPhotos((prev) => prev.filter((p) => p !== url));
+  }
+
   async function handleSave() {
     setError(null);
     setSaved(false);
@@ -82,7 +111,9 @@ export default function ProfileScreen() {
         bio: bio || null,
         location: location || null,
         country: country || null,
+        language,
         avatar_url: avatarUrl,
+        tank_photos: tankPhotos,
       });
       setProfile(updated);
       setSaved(true);
@@ -90,6 +121,24 @@ export default function ProfileScreen() {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    const confirmed = await confirmAsync(
+      "Delete your account?",
+      "This can't be undone. You'll be signed out immediately.",
+      "Delete",
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await deleteOwnAccount(apiClient);
+      await supabase.auth.signOut();
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Failed to delete account");
+      setDeleting(false);
     }
   }
 
@@ -144,6 +193,30 @@ export default function ProfileScreen() {
         </View>
 
         <View>
+          <FieldLabel>Tank Photos</FieldLabel>
+          <View className="flex-row flex-wrap gap-2">
+            {tankPhotos.map((url) => (
+              <View key={url} className="w-20 h-20 rounded-lg overflow-hidden bg-muted">
+                <Image source={{ uri: url }} style={{ width: 80, height: 80 }} contentFit="cover" />
+                <Pressable
+                  onPress={() => handleRemoveTankPhoto(url)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 items-center justify-center"
+                >
+                  <X size={12} color={themeColors.white} />
+                </Pressable>
+              </View>
+            ))}
+            <Pressable
+              onPress={handleAddTankPhoto}
+              disabled={uploadingTankPhoto}
+              className="w-20 h-20 rounded-lg border border-dashed border-border items-center justify-center"
+            >
+              {uploadingTankPhoto ? <ActivityIndicator color={themeColors.primary} /> : <Plus size={20} color={themeColors.mutedForeground} />}
+            </Pressable>
+          </View>
+        </View>
+
+        <View>
           <FieldLabel>Display Name</FieldLabel>
           <TextInput value={displayName} onChangeText={setDisplayName} className={inputClassName} placeholderTextColor={themeColors.mutedForeground} />
         </View>
@@ -185,6 +258,23 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View>
+          <FieldLabel>Language</FieldLabel>
+          <View className="flex-row flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <Pressable
+                key={lang.code}
+                onPress={() => setLanguage(lang.code)}
+                className={`px-3 py-2 rounded-full ${language === lang.code ? "bg-primary" : "bg-muted"}`}
+              >
+                <Text className={`text-xs font-semibold ${language === lang.code ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                  {lang.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         {profile && (
           <View className="flex-row items-center gap-3">
             {profile.verified_seller && (
@@ -208,6 +298,23 @@ export default function ProfileScreen() {
           <LogOut size={16} color={themeColors.foreground} />
           <Text className="font-semibold text-sm text-foreground">Sign Out</Text>
         </Pressable>
+
+        <Pressable testID="delete-account-button" onPress={handleDeleteAccount} disabled={deleting} className="items-center py-2">
+          {deleting ? (
+            <ActivityIndicator color={themeColors.destructive} />
+          ) : (
+            <Text className="font-semibold text-sm text-destructive">Delete Account</Text>
+          )}
+        </Pressable>
+
+        <View className="flex-row justify-center gap-4 pt-2">
+          <Pressable onPress={() => router.push("/terms")}>
+            <Text className="text-xs text-muted-foreground underline">Terms of Service</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/privacy")}>
+            <Text className="text-xs text-muted-foreground underline">Privacy Policy</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
