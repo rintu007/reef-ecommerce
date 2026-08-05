@@ -1,7 +1,8 @@
 import { getOwnProfile, updateOwnProfile, type Profile } from "@reef-market/shared";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { LogOut } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Heart, LogOut, Wrench } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,7 @@ const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -98,6 +100,17 @@ export default function ProfileScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Text className="text-xl font-bold text-foreground">My Profile</Text>
+
+        <View className="flex-row gap-3">
+          <Pressable onPress={() => router.push("/saved")} className="flex-1 flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
+            <Heart size={16} color={themeColors.foreground} />
+            <Text className="text-sm font-semibold text-foreground">Saved Listings</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/services")} className="flex-1 flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
+            <Wrench size={16} color={themeColors.foreground} />
+            <Text className="text-sm font-semibold text-foreground">Services</Text>
+          </Pressable>
+        </View>
 
         <PayoutsSection />
 
