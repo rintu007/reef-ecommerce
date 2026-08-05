@@ -28,9 +28,10 @@ import {
   Wind,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
@@ -353,14 +354,14 @@ export default function ListingDetailScreen() {
               </View>
               <View className="flex-row gap-2">
                 <Pressable
-                  onPress={() => Alert.alert("Coming soon", "Seller storefronts land in a later milestone.")}
+                  onPress={() => notify("Coming soon", "Seller storefronts land in a later milestone.")}
                   className="flex-row items-center gap-1 border border-border rounded-xl h-8 px-2.5"
                 >
                   <Store size={13} color={themeColors.foreground} />
                   <Text className="text-xs font-semibold text-foreground">Store</Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => Alert.alert("Coming soon", "Messaging lands in a later milestone.")}
+                  onPress={() => notify("Coming soon", "Messaging lands in a later milestone.")}
                   className="flex-row items-center gap-1 border border-border rounded-xl h-8 px-2.5"
                 >
                   <MessageCircle size={13} color={themeColors.foreground} />
@@ -416,14 +417,14 @@ export default function ListingDetailScreen() {
       <SafeAreaView edges={["bottom"]} className="absolute bottom-0 left-0 right-0 bg-card border-t border-border px-4 pt-3">
         <View className="flex-row gap-3 pb-3">
           <Pressable
-            onPress={() => Alert.alert("Coming soon", "Seller storefronts land in a later milestone.")}
+            onPress={() => notify("Coming soon", "Seller storefronts land in a later milestone.")}
             className="h-12 px-4 rounded-xl border border-border items-center justify-center flex-row gap-1.5"
           >
             <Store size={16} color={themeColors.foreground} />
             <Text className="text-sm font-bold text-foreground">Store</Text>
           </Pressable>
           <Pressable
-            onPress={() => Alert.alert("Coming soon", "Checkout lands in a later milestone.")}
+            onPress={() => notify("Coming soon", "Checkout lands in a later milestone.")}
             disabled={listing.status !== "active" || listing.quantity <= 0}
             className={`flex-1 h-12 rounded-xl items-center justify-center flex-row gap-2 ${
               listing.status !== "active" || listing.quantity <= 0 ? "bg-muted" : "bg-primary"
