@@ -44,6 +44,14 @@ export async function queryListings(
 
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
 
+  // Hides listings from sellers the viewer has blocked — only applied to the
+  // general browse feed, not when a specific seller's storefront is requested.
+  if (viewer && !params.sellerId) {
+    const { data: blocked } = await db.from("blocked_users").select("blocked_id").eq("blocker_id", viewer.id);
+    const blockedIds = (blocked ?? []).map((b) => b.blocked_id as string);
+    if (blockedIds.length > 0) query = query.not("seller_id", "in", `(${blockedIds.join(",")})`);
+  }
+
   if (isOwnerOrAdmin) {
     if (params.status) query = query.eq("status", params.status);
   } else {

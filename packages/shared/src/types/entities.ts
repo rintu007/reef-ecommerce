@@ -310,6 +310,12 @@ export const savedSearchSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type SavedSearch = z.infer<typeof savedSearchSchema>;
+export const savedSearchCreateSchema = savedSearchSchema
+  .omit({ id: true, user_id: true, created_at: true, updated_at: true })
+  .partial({ name: true, listing_type: true, category: true, keyword: true, max_price: true, shipping_available: true, local_pickup: true, is_active: true });
+export type SavedSearchCreateInput = z.infer<typeof savedSearchCreateSchema>;
+export const savedSearchUpdateSchema = savedSearchCreateSchema.partial();
+export type SavedSearchUpdateInput = z.infer<typeof savedSearchUpdateSchema>;
 
 // ============================================================== reports / blocked_users
 export const reportSchema = z.object({
@@ -325,6 +331,10 @@ export const reportSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type Report = z.infer<typeof reportSchema>;
+export const reportCreateSchema = reportSchema
+  .omit({ id: true, reporter_id: true, status: true, created_at: true, updated_at: true })
+  .partial({ listing_id: true, reported_id: true, details: true });
+export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 
 export const blockedUserSchema = z.object({
   id: uuid(),
@@ -334,6 +344,10 @@ export const blockedUserSchema = z.object({
   created_at: isoDateTime(),
 });
 export type BlockedUser = z.infer<typeof blockedUserSchema>;
+export const blockedUserCreateSchema = blockedUserSchema
+  .omit({ id: true, blocker_id: true, created_at: true })
+  .partial({ reason: true });
+export type BlockedUserCreateInput = z.infer<typeof blockedUserCreateSchema>;
 
 // ============================================================== membership / subscriptions / promo
 export const membershipPlanSchema = z.object({
@@ -379,6 +393,12 @@ export const promoCodeSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type PromoCode = z.infer<typeof promoCodeSchema>;
+export const promoCodeCreateSchema = promoCodeSchema
+  .omit({ id: true, uses: true, created_at: true, updated_at: true })
+  .partial({ bonus_listings: true, expires_at: true, is_active: true, notes: true });
+export type PromoCodeCreateInput = z.infer<typeof promoCodeCreateSchema>;
+export const promoCodeUpdateSchema = promoCodeCreateSchema.partial();
+export type PromoCodeUpdateInput = z.infer<typeof promoCodeUpdateSchema>;
 
 // ============================================================== credits / payouts
 export const userCreditSchema = z.object({

@@ -7,7 +7,11 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthGate } from "@/components/AuthGate";
+import { BlockedUsersSection } from "@/components/BlockedUsersSection";
 import { PayoutsSection } from "@/components/PayoutsSection";
+import { PromoCodeSection } from "@/components/PromoCodeSection";
+import { SavedSearchesSection } from "@/components/SavedSearchesSection";
+import { SubscriptionSection } from "@/components/SubscriptionSection";
 import { apiClient } from "@/lib/api-client";
 import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
@@ -170,7 +174,11 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
+        <SubscriptionSection />
         <PayoutsSection />
+        <SavedSearchesSection />
+        <PromoCodeSection />
+        <BlockedUsersSection />
 
         <View>
           <FieldLabel>Avatar</FieldLabel>

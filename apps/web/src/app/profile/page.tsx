@@ -6,7 +6,11 @@ import { deleteOwnAccount, getOwnProfile, updateOwnProfile, ApiError, LANGUAGES,
 import { apiClient } from "@/lib/api-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { uploadPhoto } from "@/lib/uploads";
+import { BlockedUsersSection } from "./BlockedUsersSection";
 import { PayoutsSection } from "./PayoutsSection";
+import { PromoCodeSection } from "./PromoCodeSection";
+import { SavedSearchesSection } from "./SavedSearchesSection";
+import { SubscriptionSection } from "./SubscriptionSection";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -142,8 +146,12 @@ export default function ProfilePage() {
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">My Profile</h1>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-4">
+        <SubscriptionSection />
         <PayoutsSection />
+        <SavedSearchesSection />
+        <PromoCodeSection />
+        <BlockedUsersSection />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

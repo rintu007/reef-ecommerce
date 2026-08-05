@@ -14,6 +14,8 @@ import type {
   Announcement,
   AnnouncementCreateInput,
   AnnouncementUpdateInput,
+  BlockedUser,
+  BlockedUserCreateInput,
   CheckoutInput,
   HelpContent,
   HelpContentCreateInput,
@@ -21,21 +23,30 @@ import type {
   Listing,
   ListingCreateInput,
   ListingUpdateInput,
+  MembershipPlan,
   Message,
   Order,
   Profile,
   ProfileUpdateInput,
+  PromoCode,
+  PromoCodeCreateInput,
+  PromoCodeUpdateInput,
   PublicProfile,
   Report,
+  ReportCreateInput,
   Review,
   ReviewCreateInput,
+  SavedSearch,
+  SavedSearchCreateInput,
+  SavedSearchUpdateInput,
   SendMessageInput,
   Service,
   ServiceCreateInput,
   ServiceUpdateInput,
   ShipOrderInput,
+  UserSubscription,
 } from "./types/entities";
-import type { ReportStatus, UserRole } from "./types/enums";
+import type { PlanSlug, ReportStatus, UserRole } from "./types/enums";
 
 export class ApiError extends Error {
   status: number;
@@ -334,6 +345,82 @@ export function updateHelpContent(client: ApiClient, id: string, input: HelpCont
 
 export function deleteHelpContent(client: ApiClient, id: string) {
   return client.delete<{ deleted: true }>(`/api/admin/help-content/${id}`);
+}
+
+// ============================================================== saved searches
+
+export function listSavedSearches(client: ApiClient) {
+  return client.get<{ savedSearches: SavedSearch[] }>("/api/saved-searches");
+}
+
+export function createSavedSearch(client: ApiClient, input: SavedSearchCreateInput) {
+  return client.post<{ savedSearch: SavedSearch }>("/api/saved-searches", input);
+}
+
+export function updateSavedSearch(client: ApiClient, id: string, input: SavedSearchUpdateInput) {
+  return client.patch<{ savedSearch: SavedSearch }>(`/api/saved-searches/${id}`, input);
+}
+
+export function deleteSavedSearch(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/saved-searches/${id}`);
+}
+
+// ============================================================== reports / blocked users
+
+export function createReport(client: ApiClient, input: ReportCreateInput) {
+  return client.post<{ report: Report }>("/api/reports", input);
+}
+
+export function listBlockedUsers(client: ApiClient) {
+  return client.get<{ blockedUsers: BlockedUser[] }>("/api/blocked-users");
+}
+
+export function blockUser(client: ApiClient, input: BlockedUserCreateInput) {
+  return client.post<{ blockedUser: BlockedUser }>("/api/blocked-users", input);
+}
+
+export function unblockUser(client: ApiClient, blockedId: string) {
+  return client.delete<{ deleted: true }>(`/api/blocked-users/${blockedId}`);
+}
+
+// ============================================================== promo codes
+
+export function redeemPromoCode(client: ApiClient, code: string) {
+  return client.post<{ granted: string }>("/api/promo-codes/redeem", { code });
+}
+
+export function listAdminPromoCodes(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
+  return client.get<{ promoCodes: PromoCode[]; total: number }>(`/api/admin/promo-codes${toQueryString(params)}`);
+}
+
+export function createPromoCode(client: ApiClient, input: PromoCodeCreateInput) {
+  return client.post<{ promoCode: PromoCode }>("/api/admin/promo-codes", input);
+}
+
+export function updatePromoCode(client: ApiClient, id: string, input: PromoCodeUpdateInput) {
+  return client.patch<{ promoCode: PromoCode }>(`/api/admin/promo-codes/${id}`, input);
+}
+
+export function deletePromoCode(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/admin/promo-codes/${id}`);
+}
+
+// ============================================================== membership / subscriptions
+
+export function listMembershipPlans(client: ApiClient) {
+  return client.get<{ plans: MembershipPlan[] }>("/api/membership-plans");
+}
+
+export function getOwnSubscription(client: ApiClient) {
+  return client.get<{ subscription: UserSubscription | null; plan: MembershipPlan }>("/api/subscriptions");
+}
+
+export function createSubscriptionCheckout(client: ApiClient, planSlug: PlanSlug) {
+  return client.post<{ url: string }>("/api/subscriptions/checkout", { plan_slug: planSlug });
+}
+
+export function cancelSubscription(client: ApiClient) {
+  return client.post<{ subscription: UserSubscription }>("/api/subscriptions/cancel");
 }
 
 // ============================================================== watchlist

@@ -12,6 +12,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   AlertTriangle,
   ArrowLeft,
+  Flag,
   Gauge,
   Heart,
   MapPin,
@@ -30,6 +31,7 @@ import {
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ReportBlockSheet } from "@/components/ReportBlockSheet";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
@@ -103,6 +105,7 @@ export default function ListingDetailScreen() {
   const [reviews, setReviews] = useState<SellerReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [reportSheetOpen, setReportSheetOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,13 +166,24 @@ export default function ListingDetailScreen() {
                 <ArrowLeft size={18} color={themeColors.white} />
               </Pressable>
               {session && (
-                <Pressable
-                  testID="save-listing-detail"
-                  onPress={() => toggle(listing.id, isSaved)}
-                  className="w-9 h-9 rounded-full bg-black/40 items-center justify-center"
-                >
-                  <Heart size={18} color={isSaved ? "#ef4444" : themeColors.white} fill={isSaved ? "#ef4444" : "transparent"} />
-                </Pressable>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    testID="save-listing-detail"
+                    onPress={() => toggle(listing.id, isSaved)}
+                    className="w-9 h-9 rounded-full bg-black/40 items-center justify-center"
+                  >
+                    <Heart size={18} color={isSaved ? "#ef4444" : themeColors.white} fill={isSaved ? "#ef4444" : "transparent"} />
+                  </Pressable>
+                  {session.user.id !== listing.seller_id && (
+                    <Pressable
+                      testID="report-block-trigger"
+                      onPress={() => setReportSheetOpen(true)}
+                      className="w-9 h-9 rounded-full bg-black/40 items-center justify-center"
+                    >
+                      <Flag size={16} color={themeColors.white} />
+                    </Pressable>
+                  )}
+                </View>
               )}
             </View>
           </SafeAreaView>
@@ -448,6 +462,14 @@ export default function ListingDetailScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <ReportBlockSheet
+        visible={reportSheetOpen}
+        onClose={() => setReportSheetOpen(false)}
+        listingId={listing.id}
+        listingTitle={listing.title}
+        sellerId={listing.seller_id}
+      />
     </View>
   );
 }

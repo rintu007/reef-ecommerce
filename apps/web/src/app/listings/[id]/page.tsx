@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getListingById } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
 import { listSavedListingIds } from "@/lib/server/watchlist";
+import { ReportBlockButton } from "@/components/ReportBlockButton";
 import { SaveButton } from "@/components/SaveButton";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,11 +48,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               <h1 className="text-2xl font-bold mt-1">{listing.title}</h1>
             </div>
             {user && (
-              <SaveButton
-                listingId={listing.id}
-                initialSaved={isSaved}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg hover:bg-gray-200 transition-colors shrink-0"
-              />
+              <div className="flex gap-2 shrink-0">
+                <SaveButton
+                  listingId={listing.id}
+                  initialSaved={isSaved}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-lg hover:bg-gray-200 transition-colors"
+                />
+                {user.id !== listing.seller_id && (
+                  <ReportBlockButton
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                    sellerId={listing.seller_id}
+                    className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-base hover:bg-gray-200 transition-colors"
+                  />
+                )}
+              </div>
             )}
           </div>
           <p className="text-2xl font-bold text-blue-600 mt-2">${listing.price.toFixed(2)}</p>

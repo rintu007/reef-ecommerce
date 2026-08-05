@@ -4,6 +4,7 @@ import { env } from "@/lib/server/env";
 import { stripe } from "@/lib/server/stripe";
 import { cancelOrderByPaymentIntent, confirmOrderPayment } from "@/lib/server/orders";
 import { syncPayoutAccountStatus } from "@/lib/server/payouts";
+import { syncSubscriptionFromCheckoutSession, syncSubscriptionFromStripeObject } from "@/lib/server/subscriptions";
 
 /**
  * Authoritative order-finalization path (SYSTEM_ANALYSIS.md SS3.3: the webhook
@@ -41,6 +42,17 @@ export async function POST(request: Request) {
       case "account.updated": {
         const account = event.data.object as Stripe.Account;
         await syncPayoutAccountStatus(account.id, !!account.payouts_enabled, !!account.details_submitted);
+        break;
+      }
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === "subscription") await syncSubscriptionFromCheckoutSession(session);
+        break;
+      }
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await syncSubscriptionFromStripeObject(subscription);
         break;
       }
       default:
