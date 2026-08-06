@@ -4,6 +4,7 @@ import {
   confirmReceipt,
   createReview,
   denyPickup,
+  fileDoaClaim,
   getOrder,
   markPickedUp,
   shipOrder,
@@ -76,6 +77,76 @@ function ReviewForm({ listingId }: { listingId: string }) {
       {error && <Text className="text-sm text-destructive">{error}</Text>}
       <Pressable onPress={handleSubmit} disabled={submitting} className="self-start bg-primary rounded-xl px-4 py-2.5">
         <Text className="text-sm font-semibold text-white">{submitting ? "Submitting…" : "Submit Review"}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const DOA_ELIGIBLE_STATUSES = ["confirmed", "shipped", "delivered", "awaiting_pickup", "pickup_confirmed", "completed"];
+
+function DoaClaimSection({ order, onFiled }: { order: Order; onFiled: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (order.doa_claim_status === "pending") {
+    return (
+      <View className="pt-3 border-t border-border mt-3">
+        <Text className="text-sm font-semibold text-amber-700">Claim under review</Text>
+        <Text className="text-sm text-muted-foreground mt-0.5">{order.doa_claim_reason}</Text>
+      </View>
+    );
+  }
+
+  if (!DOA_ELIGIBLE_STATUSES.includes(order.status)) return null;
+
+  if (!open) {
+    return (
+      <Pressable testID="file-claim-button" onPress={() => setOpen(true)} className="self-start bg-red-100 rounded-xl px-4 py-2.5 mt-2">
+        <Text className="text-sm font-semibold text-red-800">
+          {order.doa_claim_status === "denied" ? "File a New Claim" : "File a Claim"}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await fileDoaClaim(apiClient, order.id, { reason });
+      onFiled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to file claim");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <View className="pt-3 border-t border-border mt-3 gap-2">
+      <Text className="text-sm font-semibold text-foreground">File a DOA Claim</Text>
+      <TextInput
+        testID="claim-reason-input"
+        value={reason}
+        onChangeText={setReason}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+        placeholder="What happened? (e.g. arrived dead, photo taken within 2 hours)"
+        placeholderTextColor={themeColors.mutedForeground}
+        className="border border-border bg-background rounded-xl px-3 py-2.5 text-sm text-foreground"
+        style={{ minHeight: 70 }}
+      />
+      {error && <Text className="text-sm text-destructive">{error}</Text>}
+      <Pressable
+        testID="submit-claim-button"
+        onPress={submit}
+        disabled={submitting || !reason.trim()}
+        className="self-start bg-red-600 rounded-xl px-4 py-2.5"
+      >
+        {submitting ? <ActivityIndicator color={themeColors.white} /> : <Text className="text-sm font-semibold text-white">Submit Claim</Text>}
       </Pressable>
     </View>
   );
@@ -233,6 +304,8 @@ export default function OrderDetailScreen() {
           )}
 
           {canReview && order.listing_id && <ReviewForm listingId={order.listing_id} />}
+
+          {role === "buyer" && <DoaClaimSection order={order} onFiled={load} />}
         </View>
       </ScrollView>
     </SafeAreaView>

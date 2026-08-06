@@ -6,13 +6,17 @@ import {
   cancelOrder,
   confirmPickup,
   confirmReceipt,
+  denyDoaClaim,
   denyPickup,
+  fileDoaClaim,
   markPickedUp,
   refundOrder,
   shipOrder,
   type Order,
 } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+
+const DOA_ELIGIBLE_STATUSES = ["confirmed", "shipped", "delivered", "awaiting_pickup", "pickup_confirmed", "completed"];
 
 const BTN_PRIMARY = "px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50";
 const BTN_DANGER = "px-4 py-2 rounded-lg bg-red-100 text-red-800 text-sm font-semibold hover:bg-red-200 transition-colors disabled:opacity-50";
@@ -24,6 +28,8 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
   const [error, setError] = useState<string | null>(null);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("");
+  const [showClaimForm, setShowClaimForm] = useState(false);
+  const [claimReason, setClaimReason] = useState("");
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -38,14 +44,18 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
     }
   }
 
+  const claimEligible = role === "buyer" && DOA_ELIGIBLE_STATUSES.includes(order.status);
+
   const hasAnyAction =
     (role === "buyer" &&
       (order.status === "pending" ||
         order.status === "confirmed" ||
         order.status === "shipped" ||
-        order.status === "awaiting_pickup")) ||
+        order.status === "awaiting_pickup" ||
+        claimEligible)) ||
     (role === "seller" && order.status === "confirmed") ||
-    (role === "admin" && !!order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled");
+    (role === "admin" && !!order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled") ||
+    (role === "admin" && !!order.doa_claim_status);
 
   if (!hasAnyAction) return null;
 
@@ -122,6 +132,55 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
             Issue Store Credit
           </button>
         </div>
+      )}
+
+      {role === "admin" && order.doa_claim_status && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm">
+          <p className="font-semibold text-amber-900">
+            DOA claim: <span className="capitalize">{order.doa_claim_status}</span>
+          </p>
+          {order.doa_claim_reason && <p className="text-amber-800 mt-1">{order.doa_claim_reason}</p>}
+          {order.doa_claim_status === "pending" && (
+            <button onClick={() => run(() => denyDoaClaim(apiClient, order.id))} disabled={busy} className={`${BTN_SECONDARY} mt-2`}>
+              Deny Claim
+            </button>
+          )}
+        </div>
+      )}
+
+      {claimEligible && order.doa_claim_status === "pending" && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm">
+          <p className="font-semibold text-amber-900">Claim under review</p>
+          <p className="text-amber-800 mt-1">{order.doa_claim_reason}</p>
+        </div>
+      )}
+
+      {claimEligible && order.doa_claim_status !== "pending" && !showClaimForm && (
+        <button onClick={() => setShowClaimForm(true)} className={BTN_DANGER}>
+          {order.doa_claim_status === "denied" ? "File a New Claim" : "File a Claim"}
+        </button>
+      )}
+
+      {claimEligible && order.doa_claim_status !== "pending" && showClaimForm && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            run(() => fileDoaClaim(apiClient, order.id, { reason: claimReason })).then(() => setShowClaimForm(false));
+          }}
+          className="space-y-2"
+        >
+          <textarea
+            value={claimReason}
+            onChange={(e) => setClaimReason(e.target.value)}
+            placeholder="What happened? (e.g. arrived dead, photo taken within 2 hours)"
+            required
+            rows={3}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <button type="submit" disabled={busy} className={BTN_DANGER}>
+            Submit Claim
+          </button>
+        </form>
       )}
     </div>
   );

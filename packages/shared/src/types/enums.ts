@@ -31,6 +31,7 @@ export const orderStatusSchema = z.enum([
   "pending", "confirmed", "shipped", "delivered", "completed",
   "cancelled", "doa_claim", "awaiting_pickup", "pickup_confirmed",
 ]);
+export const doaClaimReviewStatusSchema = z.enum(["pending", "approved", "denied"]);
 
 export const reviewTypeSchema = z.enum(["seller_review", "buyer_review"]);
 export const watchlistTypeSchema = z.enum(["listing", "keyword"]);
@@ -65,6 +66,7 @@ export type ServiceType = z.infer<typeof serviceTypeSchema>;
 export type ServiceStatus = z.infer<typeof serviceStatusSchema>;
 export type OrderShippingMethod = z.infer<typeof orderShippingMethodSchema>;
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
+export type DoaClaimReviewStatus = z.infer<typeof doaClaimReviewStatusSchema>;
 export type ReviewType = z.infer<typeof reviewTypeSchema>;
 export type WatchlistType = z.infer<typeof watchlistTypeSchema>;
 export type ReportType = z.infer<typeof reportTypeSchema>;

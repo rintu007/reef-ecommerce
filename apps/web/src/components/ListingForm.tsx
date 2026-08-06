@@ -9,6 +9,7 @@ import {
   SALTWATER_TYPES,
   ApiError,
   createListing,
+  fromCents,
   updateListing,
   type Listing,
   type ListingType,
@@ -21,6 +22,72 @@ interface ListingFormProps {
   mode: "create" | "edit";
   listingId?: string;
   initial?: Listing;
+}
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function PickupTimesEditor({ times, onChange }: { times: string[]; onChange: (next: string[]) => void }) {
+  const [days, setDays] = useState<string[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  function toggleDay(day: string) {
+    setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
+
+  function addSlot() {
+    if (days.length === 0 || !from || !to) return;
+    onChange([...times, `${days.join(", ")} ${from} – ${to}`]);
+    setDays([]);
+    setFrom("");
+    setTo("");
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {DAYS.map((day) => (
+          <button
+            key={day}
+            type="button"
+            onClick={() => toggleDay(day)}
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold ${days.includes(day) ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
+          >
+            {day}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          placeholder="From (e.g. 10:00 AM)"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+        />
+        <input
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          placeholder="To (e.g. 2:00 PM)"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+        />
+        <button type="button" onClick={addSlot} className="px-3 rounded-lg bg-gray-900 text-white text-xs font-semibold">
+          Add
+        </button>
+      </div>
+      {times.length > 0 && (
+        <ul className="space-y-1">
+          {times.map((slot, i) => (
+            <li key={i} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-xs text-gray-700">
+              <span>{slot}</span>
+              <button type="button" onClick={() => onChange(times.filter((_, idx) => idx !== i))} className="text-red-600 font-semibold">
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export function ListingForm({ mode, listingId, initial }: ListingFormProps) {
@@ -36,6 +103,9 @@ export function ListingForm({ mode, listingId, initial }: ListingFormProps) {
   const [location, setLocation] = useState(initial?.location ?? "");
   const [shippingAvailable, setShippingAvailable] = useState(initial?.shipping_available ?? false);
   const [localPickup, setLocalPickup] = useState(initial?.local_pickup ?? true);
+  const [pickupAddress, setPickupAddress] = useState(initial?.pickup_address ?? "");
+  const [pickupTimes, setPickupTimes] = useState<string[]>(initial?.pickup_times ?? []);
+  const [featuredFee, setFeaturedFee] = useState(initial?.featured_fee ?? false);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
   const [uploadingCount, setUploadingCount] = useState(0);
 
@@ -89,6 +159,9 @@ export function ListingForm({ mode, listingId, initial }: ListingFormProps) {
         location: location || undefined,
         shipping_available: shippingAvailable,
         local_pickup: localPickup,
+        pickup_address: localPickup ? pickupAddress || undefined : undefined,
+        pickup_times: localPickup ? pickupTimes : [],
+        featured_fee: featuredFee,
         photos,
       };
 
@@ -288,6 +361,38 @@ export function ListingForm({ mode, listingId, initial }: ListingFormProps) {
             Shipping available
           </label>
         </div>
+
+        {localPickup && (
+          <div className="space-y-3 rounded-lg border border-gray-200 p-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="pickup_address">
+                Pickup address
+              </label>
+              <input
+                id="pickup_address"
+                value={pickupAddress}
+                onChange={(e) => setPickupAddress(e.target.value)}
+                placeholder="Full address — only shared with buyers after purchase"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Available pickup times</label>
+              <PickupTimesEditor times={pickupTimes} onChange={setPickupTimes} />
+            </div>
+          </div>
+        )}
+
+        <label className="flex items-start gap-2 text-sm text-gray-700 rounded-lg border border-gray-200 p-3">
+          <input type="checkbox" checked={featuredFee} onChange={(e) => setFeaturedFee(e.target.checked)} className="mt-0.5" />
+          <span>
+            <span className="font-medium">Feature this listing</span>
+            <br />
+            <span className="text-xs text-gray-500">
+              Adds a flat ${fromCents(99).toFixed(2)} platform fee, taken from proceeds only if this item sells.
+            </span>
+          </span>
+        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAuthenticatedUser } from "@/lib/server/auth";
+import { CartLink } from "./CartLink";
 import { SignOutButton } from "./SignOutButton";
 
 export async function Header() {
@@ -18,6 +19,7 @@ export async function Header() {
           >
             + Sell
           </Link>
+          <CartLink />
           {user ? (
             <>
               <Link

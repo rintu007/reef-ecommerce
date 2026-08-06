@@ -1,7 +1,7 @@
 import { deleteListing, listListings, type Listing } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, useFocusEffect, useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Calculator, Plus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -69,14 +69,23 @@ export default function SellScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
         <Text className="text-xl font-bold text-foreground">My Listings</Text>
-        <Pressable
-          testID="new-listing-button"
-          onPress={() => router.push("/listing/new")}
-          className="flex-row items-center gap-1 bg-primary rounded-full px-3 py-2"
-        >
-          <Plus size={14} color={themeColors.white} />
-          <Text className="text-xs font-semibold text-white">New Listing</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            testID="fee-calculator-button"
+            onPress={() => router.push("/fee-calculator")}
+            className="w-9 h-9 items-center justify-center rounded-full bg-muted"
+          >
+            <Calculator size={16} color={themeColors.foreground} />
+          </Pressable>
+          <Pressable
+            testID="new-listing-button"
+            onPress={() => router.push("/listing/new")}
+            className="flex-row items-center gap-1 bg-primary rounded-full px-3 py-2"
+          >
+            <Plus size={14} color={themeColors.white} />
+            <Text className="text-xs font-semibold text-white">New Listing</Text>
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (

@@ -6,6 +6,7 @@ import {
   careLevelSchema,
   creditStatusSchema,
   difficultyLevelSchema,
+  doaClaimReviewStatusSchema,
   doaPolicyTypeSchema,
   equipmentConditionSchema,
   equipmentMarketSchema,
@@ -214,10 +215,20 @@ export const orderSchema = z.object({
   seller_marked_picked_up: z.boolean(),
   seller_marked_picked_up_at: isoDateTime().nullable(),
   buyer_confirmed_pickup: z.boolean(),
+  doa_claim_status: doaClaimReviewStatusSchema.nullable(),
+  doa_claim_reason: z.string().nullable(),
+  doa_claim_photos: z.array(z.string()),
+  doa_claim_filed_at: isoDateTime().nullable(),
   created_at: isoDateTime(),
   updated_at: isoDateTime(),
 });
 export type Order = z.infer<typeof orderSchema>;
+
+export const fileDoaClaimSchema = z.object({
+  reason: z.string().min(1),
+  photos: z.array(z.string()).max(5).optional(),
+});
+export type FileDoaClaimInput = z.infer<typeof fileDoaClaimSchema>;
 
 export const checkoutInputSchema = z.object({
   listing_id: uuid(),
@@ -226,6 +237,18 @@ export const checkoutInputSchema = z.object({
   pickup_time: z.string().optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutInputSchema>;
+
+export const cartCheckoutInputSchema = z.object({
+  items: z.array(checkoutInputSchema).min(1).max(20),
+});
+export type CartCheckoutInput = z.infer<typeof cartCheckoutInputSchema>;
+
+export interface CartCheckoutItemResult {
+  listing_id: string;
+  order: Order | null;
+  clientSecret: string | null;
+  error: string | null;
+}
 
 export const shipOrderInputSchema = z.object({
   tracking_number: z.string().min(1),

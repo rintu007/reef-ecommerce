@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getListingById } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
 import { listSavedListingIds } from "@/lib/server/watchlist";
+import { AddToCartButton } from "@/components/AddToCartButton";
 import { ReportBlockButton } from "@/components/ReportBlockButton";
 import { SaveButton } from "@/components/SaveButton";
 
@@ -113,12 +114,15 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           {user && user.id !== listing.seller_id && (
             <div className="mt-6 flex gap-3">
               {listing.status === "active" && (
-                <Link
-                  href={`/listings/${listing.id}/checkout`}
-                  className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Buy Now
-                </Link>
+                <>
+                  <Link
+                    href={`/listings/${listing.id}/checkout`}
+                    className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Buy Now
+                  </Link>
+                  <AddToCartButton listing={listing} />
+                </>
               )}
               <Link
                 href={`/messages/new?to=${listing.seller_id}&listing=${listing.id}`}

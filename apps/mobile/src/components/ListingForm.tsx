@@ -4,6 +4,7 @@ import {
   LISTING_TYPE_LABELS,
   SALTWATER_TYPES,
   createListing,
+  fromCents,
   updateListing,
   type Listing,
   type ListingType,
@@ -33,6 +34,63 @@ function FieldLabel({ children }: { children: string }) {
 
 const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground";
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function PickupTimesEditor({ times, onChange }: { times: string[]; onChange: (next: string[]) => void }) {
+  const [days, setDays] = useState<string[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  function toggleDay(day: string) {
+    setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
+
+  function addSlot() {
+    if (days.length === 0 || !from || !to) return;
+    onChange([...times, `${days.join(", ")} ${from} – ${to}`]);
+    setDays([]);
+    setFrom("");
+    setTo("");
+  }
+
+  return (
+    <View className="gap-2">
+      <View className="flex-row flex-wrap gap-1.5">
+        {DAYS.map((day) => (
+          <Chip key={day} label={day} active={days.includes(day)} onPress={() => toggleDay(day)} />
+        ))}
+      </View>
+      <View className="flex-row gap-2">
+        <TextInput
+          value={from}
+          onChangeText={setFrom}
+          placeholder="From (e.g. 10:00 AM)"
+          placeholderTextColor={themeColors.mutedForeground}
+          className={`flex-1 ${inputClassName}`}
+        />
+        <TextInput
+          value={to}
+          onChangeText={setTo}
+          placeholder="To (e.g. 2:00 PM)"
+          placeholderTextColor={themeColors.mutedForeground}
+          className={`flex-1 ${inputClassName}`}
+        />
+        <Pressable onPress={addSlot} className="bg-foreground rounded-xl px-3 items-center justify-center">
+          <Text className="text-white text-xs font-semibold">Add</Text>
+        </Pressable>
+      </View>
+      {times.map((slot, i) => (
+        <View key={i} className="flex-row items-center justify-between rounded-lg bg-muted px-3 py-2">
+          <Text className="text-xs text-foreground flex-1 pr-2">{slot}</Text>
+          <Pressable onPress={() => onChange(times.filter((_, idx) => idx !== i))}>
+            <Text className="text-xs font-semibold text-destructive">Remove</Text>
+          </Pressable>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function ListingForm({
   mode,
   listingId,
@@ -54,6 +112,9 @@ export function ListingForm({
   const [location, setLocation] = useState(initial?.location ?? "");
   const [shippingAvailable, setShippingAvailable] = useState(initial?.shipping_available ?? false);
   const [localPickup, setLocalPickup] = useState(initial?.local_pickup ?? true);
+  const [pickupAddress, setPickupAddress] = useState(initial?.pickup_address ?? "");
+  const [pickupTimes, setPickupTimes] = useState<string[]>(initial?.pickup_times ?? []);
+  const [featuredFee, setFeaturedFee] = useState(initial?.featured_fee ?? false);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
   const [uploadingCount, setUploadingCount] = useState(0);
 
@@ -114,6 +175,9 @@ export function ListingForm({
         location: location || undefined,
         shipping_available: shippingAvailable,
         local_pickup: localPickup,
+        pickup_address: localPickup ? pickupAddress || undefined : undefined,
+        pickup_times: localPickup ? pickupTimes : [],
+        featured_fee: featuredFee,
         photos,
       };
 
@@ -274,6 +338,35 @@ export function ListingForm({
           onValueChange={setShippingAvailable}
           trackColor={{ true: themeColors.primary, false: undefined }}
         />
+      </View>
+
+      {localPickup && (
+        <View className="gap-3 border border-border rounded-xl p-3">
+          <View>
+            <FieldLabel>Pickup address</FieldLabel>
+            <TextInput
+              value={pickupAddress}
+              onChangeText={setPickupAddress}
+              placeholder="Full address — only shared with buyers after purchase"
+              placeholderTextColor={themeColors.mutedForeground}
+              className={inputClassName}
+            />
+          </View>
+          <View>
+            <FieldLabel>Available pickup times</FieldLabel>
+            <PickupTimesEditor times={pickupTimes} onChange={setPickupTimes} />
+          </View>
+        </View>
+      )}
+
+      <View className="flex-row items-start gap-2 border border-border rounded-xl p-3">
+        <Switch value={featuredFee} onValueChange={setFeaturedFee} trackColor={{ true: themeColors.primary, false: undefined }} />
+        <View className="flex-1">
+          <Text className="text-sm font-medium text-foreground">Feature this listing</Text>
+          <Text className="text-xs text-muted-foreground mt-0.5">
+            Adds a flat ${fromCents(99).toFixed(2)} platform fee, taken from proceeds only if this item sells.
+          </Text>
+        </View>
       </View>
 
       {error && <Text className="text-sm text-destructive">{error}</Text>}

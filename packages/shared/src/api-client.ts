@@ -16,7 +16,10 @@ import type {
   AnnouncementUpdateInput,
   BlockedUser,
   BlockedUserCreateInput,
+  CartCheckoutInput,
+  CartCheckoutItemResult,
   CheckoutInput,
+  FileDoaClaimInput,
   HelpContent,
   HelpContentCreateInput,
   HelpContentUpdateInput,
@@ -451,6 +454,10 @@ export function checkout(client: ApiClient, input: CheckoutInput) {
   return client.post<{ order: Order; clientSecret: string | null }>("/api/orders/checkout", input);
 }
 
+export function checkoutCart(client: ApiClient, input: CartCheckoutInput) {
+  return client.post<{ results: CartCheckoutItemResult[] }>("/api/cart/checkout", input);
+}
+
 export function listOrders(client: ApiClient, role: "buyer" | "seller") {
   return client.get<{ orders: Order[] }>(`/api/orders?role=${role}`);
 }
@@ -485,6 +492,14 @@ export function denyPickup(client: ApiClient, id: string) {
 
 export function refundOrder(client: ApiClient, id: string, mode: "refund" | "store_credit") {
   return client.post<{ order: Order }>(`/api/admin/orders/${id}/refund`, { mode });
+}
+
+export function fileDoaClaim(client: ApiClient, id: string, input: FileDoaClaimInput) {
+  return client.post<{ order: Order }>(`/api/orders/${id}/dispute`, input);
+}
+
+export function denyDoaClaim(client: ApiClient, id: string) {
+  return client.post<{ order: Order }>(`/api/admin/orders/${id}/deny-claim`);
 }
 
 // ============================================================== reviews

@@ -22,6 +22,7 @@ import {
   ScrollText,
   Shield,
   ShoppingBag,
+  ShoppingCart,
   Star,
   Store,
   Sun,
@@ -34,6 +35,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ReportBlockSheet } from "@/components/ReportBlockSheet";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
 
@@ -99,6 +101,8 @@ export default function ListingDetailScreen() {
   const { width } = useWindowDimensions();
   const { session } = useAuth();
   const { savedIds, toggle } = useWatchlist();
+  const { addItem } = useCart();
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<PublicProfile | null>(null);
@@ -438,6 +442,24 @@ export default function ListingDetailScreen() {
             <Store size={16} color={themeColors.foreground} />
             <Text className="text-sm font-bold text-foreground">Store</Text>
           </Pressable>
+          {session && listing.status === "active" && listing.quantity > 0 && listing.seller_id !== session.user.id && (
+            <Pressable
+              testID="add-to-cart-button"
+              onPress={() => {
+                addItem({
+                  listingId: listing.id,
+                  quantity: listing.min_qty,
+                  shippingMethod: listing.shipping_available ? "shipping" : "local_pickup",
+                  pickupTime: listing.pickup_times[0],
+                });
+                setAddedToCart(true);
+                setTimeout(() => setAddedToCart(false), 2000);
+              }}
+              className="h-12 w-12 rounded-xl border border-primary items-center justify-center"
+            >
+              {addedToCart ? <Text className="text-primary text-xs font-bold">✓</Text> : <ShoppingCart size={18} color={themeColors.primary} />}
+            </Pressable>
+          )}
           <Pressable
             onPress={() =>
               session

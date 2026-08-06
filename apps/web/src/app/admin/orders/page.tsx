@@ -53,6 +53,9 @@ export default async function AdminOrdersPage() {
               >
                 {order.status.replace("_", " ")}
               </span>
+              {order.doa_claim_status === "pending" && (
+                <span className="text-xs font-semibold px-2 py-1 rounded-full shrink-0 bg-amber-100 text-amber-800">claim pending</span>
+              )}
             </Link>
           ))}
         </div>

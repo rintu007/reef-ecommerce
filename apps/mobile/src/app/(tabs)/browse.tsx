@@ -7,12 +7,14 @@ import {
   type Listing,
   type ListingType,
 } from "@reef-market/shared";
-import { SlidersHorizontal, Search, X } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ShoppingCart, SlidersHorizontal, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { ListingCard } from "@/components/ListingCard";
@@ -38,8 +40,10 @@ function Pill({ label, active, activeClassName, onPress }: { label: string; acti
 }
 
 export default function BrowseScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const { savedIds, toggle } = useWatchlist();
+  const { count: cartCount } = useCart();
 
   const [market, setMarket] = useState<Market>("saltwater");
   const [q, setQ] = useState("");
@@ -118,6 +122,14 @@ export default function BrowseScreen() {
             className={`w-10 h-10 rounded-xl items-center justify-center ${showFilters ? "bg-primary" : "bg-muted"}`}
           >
             <SlidersHorizontal size={16} color={showFilters ? themeColors.white : themeColors.mutedForeground} />
+          </Pressable>
+          <Pressable testID="cart-button" onPress={() => router.push("/cart")} className="w-10 h-10 rounded-xl bg-muted items-center justify-center">
+            <ShoppingCart size={16} color={themeColors.mutedForeground} />
+            {cartCount > 0 && (
+              <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-primary items-center justify-center px-1">
+                <Text className="text-[9px] font-bold text-primary-foreground">{cartCount}</Text>
+              </View>
+            )}
           </Pressable>
         </View>
 

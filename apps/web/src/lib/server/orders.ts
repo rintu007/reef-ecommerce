@@ -3,7 +3,9 @@ import {
   computePlatformFeeCents,
   fromCents,
   toCents,
+  type CartCheckoutItemResult,
   type CheckoutInput,
+  type FileDoaClaimInput,
   type Order,
   type ShipOrderInput,
 } from "@reef-market/shared";
@@ -120,6 +122,37 @@ export async function createCheckoutIntent(
   if (updateError) throw updateError;
 
   return { order: updated as Order, clientSecret: paymentIntent.client_secret };
+}
+
+/**
+ * Cart checkout: no new payment architecture — a cart is a client-side
+ * convenience for queuing multiple single-listing purchases (across one or
+ * more sellers), and each line item still becomes its own Order + PaymentIntent
+ * via the exact same createCheckoutIntent() path a solo "Buy Now" uses. A
+ * single Stripe PaymentIntent only has one transfer_data.destination, so
+ * merging items into one charge isn't an option without a different
+ * settlement model; this keeps every existing order/webhook/refund code path
+ * unchanged and reuses it N times instead. One item failing (e.g. sold out)
+ * doesn't block the others — each result is reported independently so the
+ * client can walk through payment confirmation one at a time and surface
+ * per-item failures.
+ */
+export async function checkoutCart(buyerId: string, items: CheckoutInput[]): Promise<CartCheckoutItemResult[]> {
+  const results: CartCheckoutItemResult[] = [];
+  for (const item of items) {
+    try {
+      const { order, clientSecret } = await createCheckoutIntent(buyerId, item);
+      results.push({ listing_id: item.listing_id, order, clientSecret, error: null });
+    } catch (err) {
+      results.push({
+        listing_id: item.listing_id,
+        order: null,
+        clientSecret: null,
+        error: err instanceof OrderError ? err.message : "Checkout failed for this item",
+      });
+    }
+  }
+  return results;
 }
 
 /**
@@ -281,6 +314,55 @@ export async function denyPickup(orderId: string, buyerId: string): Promise<Orde
 }
 
 /**
+ * Buyer files a DOA (dead-on-arrival) claim. Doesn't touch order.status —
+ * `doa_claim_status` is a separate review lane so this can't collide with
+ * `status: "doa_claim"`, which refundOrder() sets only once a claim is
+ * actually resolved via refund. Re-filing after a denial is allowed (updates
+ * the same row); filing while a claim is already pending is not.
+ */
+export async function fileDoaClaim(orderId: string, buyerId: string, input: FileDoaClaimInput): Promise<Order> {
+  const db = supabaseAdmin();
+  const { data: order, error } = await db.from("orders").select("*").eq("id", orderId).maybeSingle();
+  if (error) throw error;
+  if (!order || order.buyer_id !== buyerId) throw new OrderError("Order not found", 404);
+  if (!["confirmed", "shipped", "delivered", "awaiting_pickup", "pickup_confirmed", "completed"].includes(order.status)) {
+    throw new OrderError("This order isn't eligible for a claim", 400);
+  }
+  if (order.doa_claim_status === "pending") throw new OrderError("A claim is already pending review for this order", 400);
+
+  const { data: updated, error: updateError } = await db
+    .from("orders")
+    .update({
+      doa_claim_status: "pending",
+      doa_claim_reason: input.reason,
+      doa_claim_photos: input.photos ?? [],
+      doa_claim_filed_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .select()
+    .single();
+  if (updateError) throw updateError;
+  return updated as Order;
+}
+
+/** Admin denies a pending DOA claim without refunding — order.status is untouched. */
+export async function denyDoaClaim(orderId: string): Promise<Order> {
+  const db = supabaseAdmin();
+  const { data: order, error } = await db.from("orders").select("doa_claim_status").eq("id", orderId).maybeSingle();
+  if (error) throw error;
+  if (!order || order.doa_claim_status !== "pending") throw new OrderError("No pending claim on this order", 400);
+
+  const { data: updated, error: updateError } = await db
+    .from("orders")
+    .update({ doa_claim_status: "denied" })
+    .eq("id", orderId)
+    .select()
+    .single();
+  if (updateError) throw updateError;
+  return updated as Order;
+}
+
+/**
  * 72h auto-release safety net (SYSTEM_ANALYSIS.md SS3.5) — meant to run from a
  * scheduled job (see api/cron/release-pending-pickups).
  */
@@ -334,7 +416,7 @@ export async function refundOrder(orderId: string, adminId: string, mode: "refun
 
   const { data: updated, error: updateError } = await db
     .from("orders")
-    .update({ status: "doa_claim" })
+    .update({ status: "doa_claim", ...(order.doa_claim_status === "pending" ? { doa_claim_status: "approved" } : {}) })
     .eq("id", orderId)
     .select()
     .single();
