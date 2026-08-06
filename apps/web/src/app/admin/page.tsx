@@ -43,6 +43,7 @@ export default async function AdminOverviewPage() {
         <AdminNavCard href="/admin/promo-codes" title="Promo Codes" description="Bonus listings & free membership grants" />
         <AdminNavCard href="/admin/sales-analytics" title="Sales Analytics" description="Revenue, order status, and recent activity" />
         <AdminNavCard href="/admin/app-analytics" title="App Analytics" description="Users, listings, reviews, and visitor stats" />
+        <AdminNavCard href="/api-docs" title="API Docs & Tester" description="Every backend endpoint, with example payloads you can edit and send" />
       </div>
 
       <div className="mt-8 text-sm text-gray-500">
