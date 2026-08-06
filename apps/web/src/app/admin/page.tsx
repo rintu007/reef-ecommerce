@@ -41,6 +41,8 @@ export default async function AdminOverviewPage() {
         <AdminNavCard href="/admin/announcements" title="Announcements" description="Broadcast banner shown on app load" />
         <AdminNavCard href="/admin/help-content" title="Learn Content" description="Care guides shown on the mobile Learn tab" />
         <AdminNavCard href="/admin/promo-codes" title="Promo Codes" description="Bonus listings & free membership grants" />
+        <AdminNavCard href="/admin/sales-analytics" title="Sales Analytics" description="Revenue, order status, and recent activity" />
+        <AdminNavCard href="/admin/app-analytics" title="App Analytics" description="Users, listings, reviews, and visitor stats" />
       </div>
 
       <div className="mt-8 text-sm text-gray-500">

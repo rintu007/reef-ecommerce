@@ -61,6 +61,110 @@ export async function getAdminStats(): Promise<AdminStats> {
   };
 }
 
+export interface AdminAnalytics {
+  orders: {
+    total: number;
+    completed: number;
+    pending: number;
+    revenue: { total: number; avg: number; byStatus: { completed: number; pending: number; cancelled: number } };
+  };
+  listings: { total: number; active: number; sold: number; removed: number };
+  users: { total: number };
+  reviews: { total: number; avgRating: number | null };
+  visitors: {
+    total: number;
+    today: number;
+    last7Days: number;
+    last30Days: number;
+    uniqueSessions: number;
+    authSessions: number;
+    guestSessions: number;
+    topPages: { path: string; count: number }[];
+    visitsByDay: { date: string; count: number }[];
+  };
+  recentActivity: { ordersLast30Days: number; listingsLast30Days: number; usersLast30Days: number };
+}
+
+export async function getAdminAnalytics(): Promise<AdminAnalytics> {
+  const db = supabaseAdmin();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    { count: listingsTotal },
+    { count: listingsActive },
+    { count: listingsSold },
+    { count: listingsRemoved },
+    { count: usersTotal },
+    { count: ordersLast30Days },
+    { count: listingsLast30Days },
+    { count: usersLast30Days },
+    { data: revenueRows },
+    { data: reviewRows },
+    { data: visitorRows },
+    { data: visitsByDayRows },
+    { data: topPagesRows },
+  ] = await Promise.all([
+    db.from("listings").select("id", { count: "exact", head: true }),
+    db.from("listings").select("id", { count: "exact", head: true }).eq("status", "active"),
+    db.from("listings").select("id", { count: "exact", head: true }).eq("status", "sold"),
+    db.from("listings").select("id", { count: "exact", head: true }).eq("status", "removed"),
+    db.from("profiles").select("id", { count: "exact", head: true }),
+    db.from("orders").select("id", { count: "exact", head: true }).gte("created_at", thirtyDaysAgo),
+    db.from("listings").select("id", { count: "exact", head: true }).gte("created_at", thirtyDaysAgo),
+    db.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", thirtyDaysAgo),
+    db.rpc("get_order_revenue_summary"),
+    db.rpc("get_review_summary"),
+    db.rpc("get_visitor_analytics"),
+    db.rpc("get_visits_by_day", { days_back: 30 }),
+    db.rpc("get_top_pages", { limit_count: 10 }),
+  ]);
+
+  const revenue = revenueRows?.[0];
+  const review = reviewRows?.[0];
+  const visitor = visitorRows?.[0];
+
+  return {
+    orders: {
+      total: Number(revenue?.total_orders ?? 0),
+      completed: Number(revenue?.completed_orders ?? 0),
+      pending: Number(revenue?.pending_orders ?? 0),
+      revenue: {
+        total: Number(revenue?.revenue_completed ?? 0),
+        avg: Number(revenue?.revenue_avg ?? 0),
+        byStatus: {
+          completed: Number(revenue?.revenue_completed ?? 0),
+          pending: Number(revenue?.revenue_pending ?? 0),
+          cancelled: Number(revenue?.revenue_cancelled ?? 0),
+        },
+      },
+    },
+    listings: {
+      total: listingsTotal ?? 0,
+      active: listingsActive ?? 0,
+      sold: listingsSold ?? 0,
+      removed: listingsRemoved ?? 0,
+    },
+    users: { total: usersTotal ?? 0 },
+    reviews: { total: Number(review?.total ?? 0), avgRating: review?.total ? Number(review.avg_rating) : null },
+    visitors: {
+      total: Number(visitor?.total ?? 0),
+      today: Number(visitor?.today ?? 0),
+      last7Days: Number(visitor?.last_7_days ?? 0),
+      last30Days: Number(visitor?.last_30_days ?? 0),
+      uniqueSessions: Number(visitor?.unique_sessions ?? 0),
+      authSessions: Number(visitor?.auth_sessions ?? 0),
+      guestSessions: Number(visitor?.guest_sessions ?? 0),
+      topPages: (topPagesRows ?? []).map((r: { path: string; count: number }) => ({ path: r.path, count: Number(r.count) })),
+      visitsByDay: (visitsByDayRows ?? []).map((r: { day: string; count: number }) => ({ date: r.day, count: Number(r.count) })),
+    },
+    recentActivity: {
+      ordersLast30Days: ordersLast30Days ?? 0,
+      listingsLast30Days: listingsLast30Days ?? 0,
+      usersLast30Days: usersLast30Days ?? 0,
+    },
+  };
+}
+
 export interface AdminUserListParams {
   q?: string;
   limit?: number;
