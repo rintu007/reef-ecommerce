@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListingForm } from "@/components/ListingForm";
+import { SellerAgreementGate } from "@/components/SellerAgreementGate";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function SellPage() {
@@ -29,5 +30,9 @@ export default function SellPage() {
     );
   }
 
-  return <ListingForm mode="create" />;
+  return (
+    <SellerAgreementGate>
+      <ListingForm mode="create" />
+    </SellerAgreementGate>
+  );
 }

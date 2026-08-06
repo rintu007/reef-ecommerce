@@ -15,6 +15,21 @@ export async function updateOwnProfile(userId: string, input: ProfileUpdateInput
   return data as Profile;
 }
 
+/** One-way consent flips — no request body accepted, mirrors legacy's `updateMe({ seller_agreed: true })`/`{ eula_accepted: true }`. */
+export async function agreeSellerTerms(userId: string): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("profiles").update({ seller_agreed: true }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
+export async function acceptEula(userId: string): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("profiles").update({ eula_accepted: true }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
 /**
  * orders.buyer_id/seller_id are ON DELETE RESTRICT (unlike everything else,
  * which cascades) — a hard delete would fail outright for anyone with order

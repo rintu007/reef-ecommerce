@@ -1,7 +1,7 @@
-import { deleteListing, listListings, type Listing } from "@reef-market/shared";
+import { deleteListing, listListings, updateListing, type Listing } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, useFocusEffect, useRouter } from "expo-router";
-import { Calculator, Plus } from "lucide-react-native";
+import { Calculator, Eye, Plus } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 import { AuthGate } from "@/components/AuthGate";
+import { QuickEditListingSheet } from "@/components/QuickEditListingSheet";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   active: { bg: "#d1fae5", text: "#065f46" },
@@ -24,6 +25,7 @@ export default function SellScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [quickEditListing, setQuickEditListing] = useState<Listing | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -65,6 +67,39 @@ export default function SellScreen() {
     }
   }
 
+  // One-way "Deactivate" in legacy (Listing.update(id, { status: "removed" }),
+  // no confirm dialog, optimistic UI, toast on failure) — reactivate doesn't
+  // exist there at all. Both directions are added here; only the destructive
+  // Deactivate direction gets the confirm dialog, matching Delete's rigor.
+  async function handleToggleStatus(listing: Listing) {
+    const activating = listing.status === "removed";
+    if (!activating) {
+      const confirmed = await confirmAsync(
+        "Deactivate this listing?",
+        "Buyers won't be able to find it in Browse until you reactivate it.",
+        "Deactivate",
+      );
+      if (!confirmed) return;
+    }
+
+    const nextStatus = activating ? "active" : "removed";
+    setBusyId(listing.id);
+    setListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, status: nextStatus } : l))); // optimistic
+    try {
+      const { listing: updated } = await updateListing(apiClient, listing.id, { status: nextStatus });
+      setListings((prev) => prev.map((l) => (l.id === listing.id ? updated : l)));
+    } catch (err) {
+      setListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, status: listing.status } : l))); // revert
+      notify("Error", err instanceof Error ? err.message : "Failed to update listing");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function handleQuickEditSaved(updated: Listing) {
+    setListings((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+  }
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
@@ -104,8 +139,9 @@ export default function SellScreen() {
           }
           renderItem={({ item }) => {
             const statusStyle = STATUS_STYLES[item.status] ?? { bg: "#f3f4f6", text: "#374151" };
+            const isBusy = busyId === item.id;
             return (
-              <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
+              <View className={`flex-row items-center gap-3 rounded-xl border border-border bg-card p-3 ${item.status === "removed" ? "opacity-60" : ""}`}>
                 <View className="w-14 h-14 rounded-lg overflow-hidden bg-muted shrink-0">
                   {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: 56, height: 56 }} contentFit="cover" />}
                 </View>
@@ -115,6 +151,10 @@ export default function SellScreen() {
                       {item.title}
                     </Text>
                     <Text className="text-sm text-muted-foreground">${item.price.toFixed(2)}</Text>
+                    <View className="flex-row items-center gap-1 mt-0.5">
+                      <Eye size={11} color={themeColors.mutedForeground} />
+                      <Text className="text-[11px] text-muted-foreground">{item.views} views</Text>
+                    </View>
                   </Pressable>
                 </Link>
                 <View className="rounded-full px-2 py-1" style={{ backgroundColor: statusStyle.bg }}>
@@ -123,11 +163,19 @@ export default function SellScreen() {
                   </Text>
                 </View>
                 <View className="gap-2 items-end">
+                  <Pressable testID={`quick-edit-${item.id}`} onPress={() => setQuickEditListing(item)}>
+                    <Text className="text-xs font-semibold text-primary">Quick Edit</Text>
+                  </Pressable>
                   <Pressable onPress={() => router.push(`/listing/${item.id}/edit`)}>
                     <Text className="text-xs font-semibold text-primary">Edit</Text>
                   </Pressable>
-                  <Pressable onPress={() => handleDelete(item)} disabled={busyId === item.id}>
-                    <Text className="text-xs font-semibold text-destructive">{busyId === item.id ? "…" : "Delete"}</Text>
+                  <Pressable onPress={() => handleToggleStatus(item)} disabled={isBusy}>
+                    <Text className="text-xs font-semibold text-amber-600">
+                      {isBusy ? "…" : item.status === "removed" ? "Reactivate" : "Deactivate"}
+                    </Text>
+                  </Pressable>
+                  <Pressable onPress={() => handleDelete(item)} disabled={isBusy}>
+                    <Text className="text-xs font-semibold text-destructive">{isBusy ? "…" : "Delete"}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -135,6 +183,13 @@ export default function SellScreen() {
           }}
         />
       )}
+
+      <QuickEditListingSheet
+        visible={quickEditListing !== null}
+        listing={quickEditListing}
+        onClose={() => setQuickEditListing(null)}
+        onSaved={handleQuickEditSaved}
+      />
     </SafeAreaView>
   );
 }

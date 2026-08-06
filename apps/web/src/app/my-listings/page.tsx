@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DeleteListingButton } from "@/components/DeleteListingButton";
+import { ListingRow } from "@/components/ListingRow";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings } from "@/lib/server/listings";
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-800",
-  sold: "bg-blue-100 text-blue-800",
-  pending_approval: "bg-yellow-100 text-yellow-800",
-  removed: "bg-gray-200 text-gray-700",
-};
 
 export default async function MyListingsPage() {
   const user = await getAuthenticatedUser();
@@ -42,36 +35,7 @@ export default async function MyListingsPage() {
       ) : (
         <div className="space-y-3">
           {listings.map((listing) => (
-            <div
-              key={listing.id}
-              className="flex items-center gap-4 rounded-xl border border-gray-200 p-3 bg-white"
-            >
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-2xl shrink-0 overflow-hidden">
-                {listing.photos[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={listing.photos[0]} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  "🪸"
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <Link href={`/listings/${listing.id}`} className="font-semibold text-sm hover:underline truncate block">
-                  {listing.title}
-                </Link>
-                <p className="text-sm text-gray-500">${listing.price.toFixed(2)}</p>
-              </div>
-              <span
-                className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[listing.status] ?? "bg-gray-100 text-gray-700"}`}
-              >
-                {listing.status.replace("_", " ")}
-              </span>
-              <div className="flex gap-3 shrink-0">
-                <Link href={`/listings/${listing.id}/edit`} className="text-sm font-semibold text-blue-600 hover:underline">
-                  Edit
-                </Link>
-                <DeleteListingButton listingId={listing.id} />
-              </div>
-            </div>
+            <ListingRow key={listing.id} listing={listing} />
           ))}
         </div>
       )}

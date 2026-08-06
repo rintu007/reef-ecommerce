@@ -8,7 +8,8 @@ import {
   type ListingType,
 } from "@reef-market/shared";
 import { useRouter } from "expo-router";
-import { ShoppingCart, SlidersHorizontal, Search, X } from "lucide-react-native";
+import * as Location from "expo-location";
+import { ShoppingCart, SlidersHorizontal, Search, X, MapPin } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,8 @@ import { useWatchlist } from "@/lib/use-watchlist";
 import { ListingCard } from "@/components/ListingCard";
 
 type Market = "saltwater" | "freshwater";
+
+const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 150, 200];
 
 const SORT_OPTIONS: { value: "newest" | "price_low" | "price_high" | "featured"; label: string }[] = [
   { value: "newest", label: "Newest" },
@@ -54,6 +57,11 @@ export default function BrowseScreen() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState<"newest" | "price_low" | "price_high" | "featured">("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [zipInput, setZipInput] = useState("");
+  const [radiusMiles, setRadiusMiles] = useState("50");
+  const [locationFilter, setLocationFilter] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [total, setTotal] = useState(0);
@@ -78,6 +86,9 @@ export default function BrowseScreen() {
           shipping: shippingFilter ?? undefined,
           sort,
           limit: 40,
+          lat: locationFilter?.lat,
+          lng: locationFilter?.lng,
+          radius_miles: locationFilter ? Number(radiusMiles) : undefined,
         });
         setListings(listings);
         setTotal(total);
@@ -86,16 +97,65 @@ export default function BrowseScreen() {
         setRefreshing(false);
       }
     },
-    [market, typeFilter, categoryFilter, q, minPrice, maxPrice, shippingFilter, sort],
+    [market, typeFilter, categoryFilter, q, minPrice, maxPrice, shippingFilter, sort, locationFilter, radiusMiles],
   );
 
   useEffect(() => {
     const timer = setTimeout(load, q ? 350 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [market, typeFilter, categoryFilter, q, minPrice, maxPrice, shippingFilter, sort]);
+  }, [market, typeFilter, categoryFilter, q, minPrice, maxPrice, shippingFilter, sort, locationFilter, radiusMiles]);
 
-  const hasActiveFilters = !!(typeFilter || categoryFilter || shippingFilter || minPrice || maxPrice);
+  async function handleZipSearch() {
+    const zip = zipInput.trim();
+    if (!zip) return;
+    setGeoError(null);
+    setGeoLoading(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(zip)}&country=US&format=json&limit=1`,
+      );
+      const data = await res.json();
+      const first = data?.[0];
+      if (!first) {
+        setGeoError("ZIP code not found");
+        return;
+      }
+      setLocationFilter({ lat: Number(first.lat), lng: Number(first.lon), label: `ZIP ${zip}` });
+      setShippingFilter("local_pickup");
+    } catch {
+      setGeoError("Couldn't look up that ZIP code. Please try again.");
+    } finally {
+      setGeoLoading(false);
+    }
+  }
+
+  async function handleUseMyLocation() {
+    setGeoError(null);
+    setGeoLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setGeoError("Location permission denied");
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({});
+      setLocationFilter({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: "My Location" });
+      setShippingFilter("local_pickup");
+      setZipInput("");
+    } catch {
+      setGeoError("Couldn't get your location");
+    } finally {
+      setGeoLoading(false);
+    }
+  }
+
+  function clearLocationFilter() {
+    setLocationFilter(null);
+    setZipInput("");
+  }
+
+  const hasActiveFilters = !!(typeFilter || categoryFilter || shippingFilter || minPrice || maxPrice || locationFilter);
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
@@ -162,9 +222,9 @@ export default function BrowseScreen() {
             )}
 
             <View className="flex-row items-center gap-2">
-              <Pill label="Any delivery" active={!shippingFilter} onPress={() => setShippingFilter(null)} />
+              <Pill label="Any delivery" active={!shippingFilter} onPress={() => { if (!locationFilter) setShippingFilter(null); }} />
               <Pill label="Local Pickup" active={shippingFilter === "local_pickup"} onPress={() => setShippingFilter("local_pickup")} />
-              <Pill label="Ships to Me" active={shippingFilter === "shipping"} onPress={() => setShippingFilter("shipping")} />
+              <Pill label="Ships to Me" active={shippingFilter === "shipping"} onPress={() => { if (!locationFilter) setShippingFilter("shipping"); }} />
             </View>
 
             <View className="flex-row items-center gap-2">
@@ -185,6 +245,44 @@ export default function BrowseScreen() {
                 keyboardType="numeric"
                 className="w-20 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
               />
+            </View>
+
+            <View className="gap-2 pt-1 border-t border-border">
+              <Text className="text-xs font-semibold text-muted-foreground">Search by location</Text>
+              <View className="flex-row items-center gap-2">
+                <TextInput
+                  testID="zip-input"
+                  value={zipInput}
+                  onChangeText={setZipInput}
+                  placeholder="ZIP code"
+                  placeholderTextColor={themeColors.mutedForeground}
+                  keyboardType="numeric"
+                  className="w-24 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
+                />
+                <Pressable
+                  testID="zip-search-button"
+                  onPress={handleZipSearch}
+                  disabled={geoLoading}
+                  className="h-10 px-3 rounded-lg bg-primary items-center justify-center"
+                >
+                  <Text className="text-xs font-semibold text-primary-foreground">Search</Text>
+                </Pressable>
+                <Pressable
+                  testID="use-my-location-button"
+                  onPress={handleUseMyLocation}
+                  disabled={geoLoading}
+                  className="h-10 px-3 rounded-lg bg-muted flex-row items-center gap-1 justify-center"
+                >
+                  <MapPin size={14} color={themeColors.mutedForeground} />
+                  <Text className="text-xs font-semibold text-muted-foreground">My Location</Text>
+                </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                {RADIUS_OPTIONS.map((r) => (
+                  <Pill key={r} label={`${r} mi`} active={radiusMiles === String(r)} onPress={() => setRadiusMiles(String(r))} />
+                ))}
+              </ScrollView>
+              {geoError && <Text className="text-xs text-red-600">{geoError}</Text>}
             </View>
           </View>
         )}
@@ -213,6 +311,12 @@ export default function BrowseScreen() {
           {(minPrice || maxPrice) && (
             <Pressable onPress={() => { setMinPrice(""); setMaxPrice(""); }} className="flex-row items-center gap-1 bg-secondary rounded-full px-2.5 py-1">
               <Text className="text-xs text-secondary-foreground">${minPrice || "0"} – ${maxPrice || "∞"}</Text>
+              <X size={11} color={themeColors.mutedForeground} />
+            </Pressable>
+          )}
+          {locationFilter && (
+            <Pressable testID="location-filter-chip" onPress={clearLocationFilter} className="flex-row items-center gap-1 bg-secondary rounded-full px-2.5 py-1">
+              <Text className="text-xs text-secondary-foreground">{locationFilter.label} — within {radiusMiles}mi</Text>
               <X size={11} color={themeColors.mutedForeground} />
             </Pressable>
           )}

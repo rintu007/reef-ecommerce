@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 import { useCart } from "@/lib/cart-context";
 import { useCheckoutStripe } from "@/lib/stripe-checkout";
 import { themeColors } from "@/lib/theme-colors";
@@ -23,6 +24,9 @@ export default function CartScreen() {
   const [error, setError] = useState<string | null>(null);
   const [failures, setFailures] = useState<CartCheckoutItemResult[]>([]);
   const [paying, setPaying] = useState<{ results: CartCheckoutItemResult[]; index: number } | null>(null);
+  // Buyer Agreement is shown fresh on every checkout attempt — no persistence,
+  // matching legacy's BuyerAgreementModal/CheckoutModal behavior exactly.
+  const [showAgreement, setShowAgreement] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -223,7 +227,7 @@ export default function CartScreen() {
 
           <Pressable
             testID="cart-checkout-button"
-            onPress={handleCheckout}
+            onPress={() => setShowAgreement(true)}
             disabled={checkingOut || !!paying || !stripeConfigured}
             className={`rounded-xl py-3 items-center ${checkingOut || paying || !stripeConfigured ? "bg-muted" : "bg-primary"}`}
           >
@@ -239,6 +243,16 @@ export default function CartScreen() {
             You&apos;ll pay for each item one at a time — Stripe processes each seller&apos;s sale separately.
           </Text>
         </ScrollView>
+      )}
+
+      {showAgreement && (
+        <BuyerAgreementModal
+          onAgree={() => {
+            setShowAgreement(false);
+            handleCheckout();
+          }}
+          onClose={() => setShowAgreement(false)}
+        />
       )}
     </SafeAreaView>
   );

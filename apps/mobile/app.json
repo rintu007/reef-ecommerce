@@ -39,6 +39,12 @@
           "merchantIdentifier": "merchant.com.reefmarket.app",
           "enableGooglePay": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Reef Market to use your location to find nearby local-pickup listings."
+        }
       ]
     ],
     "experiments": {

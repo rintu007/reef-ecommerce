@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingForm } from "@/components/ListingForm";
+import { SellerAgreementGate } from "@/components/SellerAgreementGate";
 import { themeColors } from "@/lib/theme-colors";
 
 export default function NewListingScreen() {
@@ -17,7 +18,9 @@ export default function NewListingScreen() {
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Create a Listing</Text>
       </View>
-      <ListingForm mode="create" />
+      <SellerAgreementGate>
+        <ListingForm mode="create" />
+      </SellerAgreementGate>
     </SafeAreaView>
   );
 }

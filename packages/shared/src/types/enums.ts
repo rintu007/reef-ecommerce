@@ -18,6 +18,7 @@ export const temperamentTypeSchema = z.enum(["peaceful", "semi-aggressive", "agg
 export const equipmentConditionSchema = z.enum(["new", "like_new", "good", "fair", "parts_only"]);
 export const equipmentMarketSchema = z.enum(["saltwater_only", "freshwater_only", "both"]);
 export const doaPolicyTypeSchema = z.enum(["full_refund", "store_credit", "no_refund", "custom", "not_applicable"]);
+export const photoTypeSchema = z.enum(["actual_photo", "stock_photo", "colony_photo"]);
 
 export const serviceTypeSchema = z.enum([
   "tank_building", "tank_cleaning_sw", "tank_cleaning_fw", "aquascaping", "maintenance",
@@ -62,6 +63,7 @@ export type TemperamentType = z.infer<typeof temperamentTypeSchema>;
 export type EquipmentCondition = z.infer<typeof equipmentConditionSchema>;
 export type EquipmentMarket = z.infer<typeof equipmentMarketSchema>;
 export type DoaPolicyType = z.infer<typeof doaPolicyTypeSchema>;
+export type PhotoType = z.infer<typeof photoTypeSchema>;
 export type ServiceType = z.infer<typeof serviceTypeSchema>;
 export type ServiceStatus = z.infer<typeof serviceStatusSchema>;
 export type OrderShippingMethod = z.infer<typeof orderShippingMethodSchema>;

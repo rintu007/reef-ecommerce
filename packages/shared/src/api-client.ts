@@ -138,6 +138,9 @@ export interface ListingBrowseParams {
   seller_id?: string;
   status?: string;
   sort?: "newest" | "price_low" | "price_high" | "featured";
+  lat?: number;
+  lng?: number;
+  radius_miles?: number;
   limit?: number;
   offset?: number;
 }
@@ -276,6 +279,14 @@ export function updateOwnProfile(client: ApiClient, input: ProfileUpdateInput) {
 
 export function deleteOwnAccount(client: ApiClient) {
   return client.delete<{ anonymized: boolean }>("/api/profile");
+}
+
+export function agreeSellerTerms(client: ApiClient) {
+  return client.post<{ profile: Profile }>("/api/profile/seller-agreement");
+}
+
+export function acceptEula(client: ApiClient) {
+  return client.post<{ profile: Profile }>("/api/profile/eula");
 }
 
 export function getPublicProfile(client: ApiClient, id: string) {

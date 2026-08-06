@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { EULAGate } from "@/components/EULAGate";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/lib/cart-context";
 import "./globals.css";
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CartProvider>
+          <EULAGate />
           <AnnouncementBanner />
           <Header />
           {children}

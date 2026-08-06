@@ -25,6 +25,9 @@ export default async function BrowsePage({
     maxPrice: sp.max_price ? Number(sp.max_price) : undefined,
     shipping: sp.shipping === "local_pickup" || sp.shipping === "shipping" ? sp.shipping : undefined,
     sort: (sp.sort as ListingQueryParams["sort"]) || "newest",
+    lat: sp.lat ? Number(sp.lat) : undefined,
+    lng: sp.lng ? Number(sp.lng) : undefined,
+    radiusMiles: sp.radius_miles ? Number(sp.radius_miles) : undefined,
     limit: 24,
   };
 

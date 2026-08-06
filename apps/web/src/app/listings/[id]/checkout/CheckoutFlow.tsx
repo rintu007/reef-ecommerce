@@ -6,10 +6,15 @@ import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-
 import { checkout, computeCheckoutBreakdown, fromCents, type Listing, type Order } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 import { getStripe } from "@/lib/stripe-client";
+import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 
 type ShippingMethod = "shipping" | "local_pickup";
 
 export function CheckoutFlow({ listing }: { listing: Listing }) {
+  const router = useRouter();
+  // Buyer Agreement is shown fresh on every checkout attempt — no persistence,
+  // matching legacy's BuyerAgreementModal/CheckoutModal behavior exactly.
+  const [agreed, setAgreed] = useState(false);
   const [quantity, setQuantity] = useState(listing.min_qty);
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>(
     listing.shipping_available ? "shipping" : "local_pickup"
@@ -57,6 +62,15 @@ export function CheckoutFlow({ listing }: { listing: Listing }) {
       <Elements stripe={getStripe()} options={{ clientSecret: checkoutResult.clientSecret }}>
         <PaymentStep order={checkoutResult.order} />
       </Elements>
+    );
+  }
+
+  if (!agreed) {
+    return (
+      <BuyerAgreementModal
+        onAgree={() => setAgreed(true)}
+        onClose={() => router.push(`/listings/${listing.id}`)}
+      />
     );
   }
 

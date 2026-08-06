@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 import { useCheckoutStripe } from "@/lib/stripe-checkout";
 import { themeColors } from "@/lib/theme-colors";
 
@@ -31,6 +32,9 @@ export default function CheckoutScreen() {
   const [pickupTime, setPickupTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Buyer Agreement is shown fresh on every checkout attempt — no persistence,
+  // matching legacy's BuyerAgreementModal/CheckoutModal behavior exactly.
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +121,10 @@ export default function CheckoutScreen() {
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Checkout</Text>
       </View>
+
+      {!agreed && (
+        <BuyerAgreementModal onAgree={() => setAgreed(true)} onClose={() => router.back()} />
+      )}
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         {!stripeConfigured && (

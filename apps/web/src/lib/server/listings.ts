@@ -19,6 +19,9 @@ export interface ListingQueryParams {
   shipping?: "local_pickup" | "shipping";
   featured?: boolean;
   sort?: "newest" | "price_low" | "price_high" | "featured";
+  lat?: number;
+  lng?: number;
+  radiusMiles?: number;
   limit?: number;
   offset?: number;
 }
@@ -80,6 +83,23 @@ export async function queryListings(
 
   if (params.featured) query = query.eq("featured", true);
 
+  // Distance search only applies to local-pickup listings (matches legacy —
+  // see `nearby_listing_ids`'s own local_pickup filter), so this narrows the
+  // result set further regardless of the `shipping` param above.
+  let distanceOrder: string[] | null = null;
+  if (params.lat !== undefined && params.lng !== undefined && params.radiusMiles !== undefined) {
+    const { data: nearby, error: nearbyError } = await db.rpc("nearby_listing_ids", {
+      p_lat: params.lat,
+      p_lng: params.lng,
+      p_radius_miles: params.radiusMiles,
+    });
+    if (nearbyError) throw nearbyError;
+    const nearbyIds = ((nearby ?? []) as { id: string; distance_miles: number }[]).map((r) => r.id);
+    if (nearbyIds.length === 0) return { listings: [], total: 0 };
+    query = query.in("id", nearbyIds);
+    distanceOrder = nearbyIds;
+  }
+
   switch (params.sort) {
     case "price_low":
       query = query.order("price", { ascending: true });
@@ -101,7 +121,13 @@ export async function queryListings(
   const { data, error, count } = await query;
   if (error) throw error;
 
-  return { listings: (data ?? []) as Listing[], total: count ?? data?.length ?? 0 };
+  let listings = (data ?? []) as Listing[];
+  if (distanceOrder && !params.sort) {
+    const rank = new Map(distanceOrder.map((id, i) => [id, i]));
+    listings = [...listings].sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
+  }
+
+  return { listings, total: count ?? data?.length ?? 0 };
 }
 
 export async function getListingById(id: string, viewer: AuthUser | null): Promise<Listing | null> {

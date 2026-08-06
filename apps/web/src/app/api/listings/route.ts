@@ -3,6 +3,7 @@ import { listingCreateSchema } from "@reef-market/shared";
 import { getAuthenticatedUser, requireUser } from "@/lib/server/auth";
 import { apiError, handleRouteError } from "@/lib/server/http";
 import { getListingLimitStatus, queryListings, type ListingQueryParams } from "@/lib/server/listings";
+import { geocodeLocation } from "@/lib/server/geocode";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
 
 /** Public listing browse/search. Replaces base44/functions/getPublicListings. */
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
     const minPrice = searchParams.get("min_price");
     const maxPrice = searchParams.get("max_price");
     const shipping = searchParams.get("shipping");
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const radiusMiles = searchParams.get("radius_miles");
 
     const params: ListingQueryParams = {
       sellerId: searchParams.get("seller_id") ?? undefined,
@@ -28,6 +32,9 @@ export async function GET(request: Request) {
       shipping: shipping === "local_pickup" || shipping === "shipping" ? shipping : undefined,
       featured: searchParams.get("featured") === "true",
       sort: (searchParams.get("sort") as ListingQueryParams["sort"]) ?? undefined,
+      lat: lat ? Number(lat) : undefined,
+      lng: lng ? Number(lng) : undefined,
+      radiusMiles: radiusMiles ? Number(radiusMiles) : undefined,
       limit: Number(searchParams.get("limit")) || undefined,
       offset: Number(searchParams.get("offset")) || undefined,
     };
@@ -58,10 +65,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const geocoded = input.local_pickup && input.location ? await geocodeLocation(input.location) : null;
+
     const db = supabaseAdmin();
     const { data, error } = await db
       .from("listings")
-      .insert({ ...input, seller_id: user.id, status: "active" })
+      .insert({
+        ...input,
+        seller_id: user.id,
+        status: "active",
+        latitude: geocoded?.lat ?? null,
+        longitude: geocoded?.lng ?? null,
+      })
       .select()
       .single();
     if (error) throw error;

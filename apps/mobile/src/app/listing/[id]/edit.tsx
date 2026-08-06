@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ListingForm } from "@/components/ListingForm";
+import { SellerAgreementGate } from "@/components/SellerAgreementGate";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
@@ -56,7 +57,9 @@ export default function EditListingScreen() {
           <Text className="text-muted-foreground text-center">You can only edit your own listings.</Text>
         </View>
       ) : (
-        <ListingForm mode="edit" listingId={listing.id} initial={listing} />
+        <SellerAgreementGate>
+          <ListingForm mode="edit" listingId={listing.id} initial={listing} />
+        </SellerAgreementGate>
       )}
     </SafeAreaView>
   );

@@ -3,6 +3,7 @@ import { listingUpdateSchema } from "@reef-market/shared";
 import { getAuthenticatedUser, requireUser } from "@/lib/server/auth";
 import { apiError, handleRouteError } from "@/lib/server/http";
 import { getListingById } from "@/lib/server/listings";
+import { geocodeLocation } from "@/lib/server/geocode";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -40,7 +41,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       return apiError("Forbidden", 403);
     }
 
-    const { data, error } = await db.from("listings").update(input).eq("id", id).select().single();
+    const geocoded = input.local_pickup && input.location ? await geocodeLocation(input.location) : null;
+    const updatePayload = geocoded ? { ...input, latitude: geocoded.lat, longitude: geocoded.lng } : input;
+
+    const { data, error } = await db.from("listings").update(updatePayload).eq("id", id).select().single();
     if (error) throw error;
 
     return NextResponse.json({ listing: data });

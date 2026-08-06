@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { checkoutCart, computeCheckoutBreakdown, fromCents, getListing, type CartCheckoutItemResult, type Listing } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 import { useCart, type CartItem } from "@/lib/cart-context";
 import { getStripe } from "@/lib/stripe-client";
 
@@ -61,6 +62,9 @@ export default function CartPage() {
   const [payable, setPayable] = useState<CartCheckoutItemResult[] | null>(null);
   const [payIndex, setPayIndex] = useState(0);
   const [failures, setFailures] = useState<CartCheckoutItemResult[]>([]);
+  // Buyer Agreement is shown fresh on every checkout attempt — no persistence,
+  // matching legacy's BuyerAgreementModal/CheckoutModal behavior exactly.
+  const [showAgreement, setShowAgreement] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -238,7 +242,7 @@ export default function CartPage() {
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
 
       <button
-        onClick={handleCheckout}
+        onClick={() => setShowAgreement(true)}
         disabled={checkingOut}
         className="w-full mt-4 rounded-lg bg-blue-600 text-white text-sm font-semibold py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-50"
       >
@@ -247,6 +251,16 @@ export default function CartPage() {
       <p className="text-xs text-gray-400 mt-2 text-center">
         You&apos;ll pay for each item one at a time — Stripe processes each seller&apos;s sale separately.
       </p>
+
+      {showAgreement && (
+        <BuyerAgreementModal
+          onAgree={() => {
+            setShowAgreement(false);
+            handleCheckout();
+          }}
+          onClose={() => setShowAgreement(false)}
+        />
+      )}
     </div>
   );
 }

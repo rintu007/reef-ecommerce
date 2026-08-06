@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ListingForm } from "@/components/ListingForm";
+import { SellerAgreementGate } from "@/components/SellerAgreementGate";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getListingById } from "@/lib/server/listings";
 
@@ -12,5 +13,9 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
   if (!listing) notFound();
   if (listing.seller_id !== user.id && user.role !== "admin") notFound();
 
-  return <ListingForm mode="edit" listingId={listing.id} initial={listing} />;
+  return (
+    <SellerAgreementGate>
+      <ListingForm mode="edit" listingId={listing.id} initial={listing} />
+    </SellerAgreementGate>
+  );
 }
