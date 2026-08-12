@@ -1,5 +1,6 @@
 export * from "./types/enums";
 export * from "./types/entities";
+export * from "./types/admin";
 export * from "./constants/categories";
 export * from "./constants/countries";
 export * from "./constants/currencies";

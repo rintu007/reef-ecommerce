@@ -206,6 +206,17 @@ export async function cancelOrder(orderId: string, buyerId: string): Promise<Ord
   return updated as Order;
 }
 
+export async function deleteOrder(orderId: string, buyerId: string): Promise<void> {
+  const db = supabaseAdmin();
+  const { data: order, error } = await db.from("orders").select("id, buyer_id, status").eq("id", orderId).maybeSingle();
+  if (error) throw error;
+  if (!order || order.buyer_id !== buyerId) throw new OrderError("Order not found", 404);
+  if (order.status !== "cancelled") throw new OrderError("Only cancelled orders can be deleted", 400);
+
+  const { error: deleteError } = await db.from("orders").delete().eq("id", orderId);
+  if (deleteError) throw deleteError;
+}
+
 async function completeOrder(orderId: string, sellerId: string): Promise<Order> {
   const db = supabaseAdmin();
   const { data: updated, error } = await db

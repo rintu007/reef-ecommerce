@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LISTING_TYPE_ICONS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings } from "@/lib/server/listings";
 import { getPublicProfile } from "@/lib/server/profiles";
 import { listReviewsForSeller } from "@/lib/server/reviews";
+import { SellerListingsGrid } from "./SellerListingsGrid";
 import { ShareButton } from "./ShareButton";
 
 export default async function SellerStorefrontPage({ params }: { params: Promise<{ id: string }> }) {
@@ -66,32 +66,7 @@ export default async function SellerStorefrontPage({ params }: { params: Promise
       {profile.bio && <p className="mt-4 text-gray-700 whitespace-pre-wrap">{profile.bio}</p>}
 
       <h2 className="text-lg font-bold mt-8 mb-4">Active Listings</h2>
-      {listings.length === 0 ? (
-        <p className="text-gray-500">No active listings.</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {listings.map((listing) => (
-            <Link
-              key={listing.id}
-              href={`/listings/${listing.id}`}
-              className="rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-md transition-shadow"
-            >
-              <div className="aspect-square bg-gray-100 flex items-center justify-center text-4xl">
-                {listing.photos[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={listing.photos[0]} alt={listing.title} className="w-full h-full object-cover" />
-                ) : (
-                  <span>{LISTING_TYPE_ICONS[listing.listing_type]}</span>
-                )}
-              </div>
-              <div className="p-3">
-                <p className="font-semibold text-sm truncate">{listing.title}</p>
-                <p className="text-sm font-bold">${listing.price.toFixed(2)}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <SellerListingsGrid listings={listings} canSelect={!viewer || viewer.id !== profile.id} />
 
       {reviewSummary.count > 0 && (
         <>

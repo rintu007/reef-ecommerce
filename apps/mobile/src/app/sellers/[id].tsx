@@ -1,23 +1,38 @@
-import { getPublicProfile, getSellerReviews, listListings, type Listing, type PublicProfile, type SellerReviewSummary } from "@reef-market/shared";
+import {
+  getPublicProfile,
+  getSellerReviews,
+  listListings,
+  LISTING_TYPE_ICONS,
+  LISTING_TYPE_LABELS,
+  type Listing,
+  type PublicProfile,
+  type SellerReviewSummary,
+} from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, MessageCircle, Share2, Star } from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Share, Text, View } from "react-native";
+import { ArrowLeft, Check, MessageCircle, Share2, Star } from "lucide-react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 
 export default function SellerStorefrontScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
+  const { addItem } = useCart();
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [reviews, setReviews] = useState<SellerReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const availableTypes = useMemo(() => ["all", ...Array.from(new Set(listings.map((l) => l.listing_type)))], [listings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,11 +65,39 @@ export default function SellerStorefrontScreen() {
   }
 
   const meta = [profile.location, profile.country].filter(Boolean).join(", ");
+  const canSelect = !session || session.user.id !== profile.id;
 
   async function handleShare() {
     const url = `${process.env.EXPO_PUBLIC_API_URL}/sellers/${id}`;
     await Share.share({ message: `Check out ${profile?.display_name ?? "this seller"}'s storefront on Reef Market: ${url}`, url });
   }
+
+  function toggleSelect(listing: Listing) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(listing.id)) next.delete(listing.id);
+      else next.add(listing.id);
+      return next;
+    });
+  }
+
+  const selectedListings = listings.filter((l) => selectedIds.has(l.id));
+  const cartTotal = selectedListings.reduce((sum, l) => sum + l.price, 0);
+
+  function handleAddToCart() {
+    for (const listing of selectedListings) {
+      addItem({
+        listingId: listing.id,
+        quantity: listing.min_qty,
+        shippingMethod: listing.shipping_available ? "shipping" : "local_pickup",
+        pickupTime: listing.pickup_times[0],
+      });
+    }
+    setSelectedIds(new Set());
+    router.push("/cart");
+  }
+
+  const filteredListings = activeTab === "all" ? listings : listings.filter((l) => l.listing_type === activeTab);
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
@@ -70,7 +113,7 @@ export default function SellerStorefrontScreen() {
       </View>
 
       <FlatList
-        data={listings}
+        data={filteredListings}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
@@ -119,25 +162,65 @@ export default function SellerStorefrontScreen() {
 
             {profile.bio && <Text className="text-sm text-muted-foreground mt-4 leading-5">{profile.bio}</Text>}
 
-            <Text className="text-base font-bold text-foreground mt-6">Active Listings</Text>
+            <Text className="text-base font-bold text-foreground mt-6 mb-2">Active Listings</Text>
+            {availableTypes.length > 1 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                {availableTypes.map((t) => (
+                  <Pressable
+                    key={t}
+                    onPress={() => setActiveTab(t)}
+                    className={`px-3 py-1.5 rounded-full border ${
+                      activeTab === t ? "bg-primary border-primary" : "border-border bg-card"
+                    }`}
+                  >
+                    <Text className={`text-xs font-medium ${activeTab === t ? "text-white" : "text-muted-foreground"}`}>
+                      {t === "all"
+                        ? `All (${listings.length})`
+                        : `${LISTING_TYPE_ICONS[t as keyof typeof LISTING_TYPE_ICONS]} ${LISTING_TYPE_LABELS[t as keyof typeof LISTING_TYPE_LABELS]} (${listings.filter((l) => l.listing_type === t).length})`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+            {canSelect && listings.length > 0 && (
+              <Text className="text-xs text-muted-foreground mt-2">
+                Tap the circle on a listing to select multiple items and check out together.
+              </Text>
+            )}
           </View>
         }
         ListEmptyComponent={<Text className="text-muted-foreground px-4">No active listings.</Text>}
-        renderItem={({ item }) => (
-          <Link href={`/listing/${item.id}`} asChild>
-            <Pressable className="flex-1 rounded-xl overflow-hidden bg-card border border-border">
-              <View className="aspect-square bg-muted">
-                {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: "100%", height: "100%" }} contentFit="cover" />}
-              </View>
-              <View className="p-3">
-                <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text className="text-sm font-bold text-foreground">${item.price.toFixed(2)}</Text>
-              </View>
-            </Pressable>
-          </Link>
-        )}
+        renderItem={({ item }) => {
+          const selected = selectedIds.has(item.id);
+          const soldOut = item.quantity <= 0;
+          return (
+            <View className={`flex-1 rounded-xl overflow-hidden bg-card border ${selected ? "border-primary" : "border-border"} ${soldOut ? "opacity-60" : ""}`}>
+              {canSelect && !soldOut && (
+                <Pressable
+                  onPress={() => toggleSelect(item)}
+                  className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 items-center justify-center ${
+                    selected ? "bg-primary border-primary" : "bg-white/90 border-border"
+                  }`}
+                >
+                  {selected && <Check size={14} color={themeColors.white} />}
+                </Pressable>
+              )}
+              <Link href={`/listing/${item.id}`} asChild>
+                <Pressable>
+                  <View className="aspect-square bg-muted">
+                    {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: "100%", height: "100%" }} contentFit="cover" />}
+                  </View>
+                  <View className="p-3">
+                    <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text className="text-sm font-bold text-foreground">${item.price.toFixed(2)}</Text>
+                  </View>
+                </Pressable>
+              </Link>
+            </View>
+          );
+        }}
         ListFooterComponent={
           reviews && reviews.reviews.length > 0 ? (
             <View className="px-4 pt-6 gap-2">
@@ -159,6 +242,20 @@ export default function SellerStorefrontScreen() {
           ) : null
         }
       />
+
+      {selectedIds.size > 0 && (
+        <View className="absolute bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 flex-row items-center gap-3">
+          <View className="flex-1">
+            <Text className="text-sm font-bold text-foreground">
+              {selectedIds.size} item{selectedIds.size !== 1 ? "s" : ""} selected
+            </Text>
+            <Text className="text-xs text-muted-foreground">Total: ${cartTotal.toFixed(2)}</Text>
+          </View>
+          <Pressable onPress={handleAddToCart} className="bg-primary rounded-xl px-5 py-2.5">
+            <Text className="text-sm font-semibold text-white">Add to Cart</Text>
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

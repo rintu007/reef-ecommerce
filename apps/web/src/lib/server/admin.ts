@@ -1,13 +1,5 @@
-import type { Profile, Report, ReportStatus, UserRole } from "@reef-market/shared";
+import type { AdminAnalytics, AdminStats, Profile, Report, ReportStatus, UserRole } from "@reef-market/shared";
 import { supabaseAdmin } from "./supabase-admin";
-
-export interface AdminStats {
-  listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
-  users: { total: number };
-  reports: { pending: number };
-  orders: { total: number; completed: number; doa_claim: number };
-  visitors: { total: number; last7Days: number; last30Days: number };
-}
 
 export async function getAdminStats(): Promise<AdminStats> {
   const db = supabaseAdmin();
@@ -59,30 +51,6 @@ export async function getAdminStats(): Promise<AdminStats> {
     orders: { total: ordersTotal ?? 0, completed: ordersCompleted ?? 0, doa_claim: ordersDoaClaim ?? 0 },
     visitors: { total: visitorsTotal ?? 0, last7Days: visitors7d ?? 0, last30Days: visitors30d ?? 0 },
   };
-}
-
-export interface AdminAnalytics {
-  orders: {
-    total: number;
-    completed: number;
-    pending: number;
-    revenue: { total: number; avg: number; byStatus: { completed: number; pending: number; cancelled: number } };
-  };
-  listings: { total: number; active: number; sold: number; removed: number };
-  users: { total: number };
-  reviews: { total: number; avgRating: number | null };
-  visitors: {
-    total: number;
-    today: number;
-    last7Days: number;
-    last30Days: number;
-    uniqueSessions: number;
-    authSessions: number;
-    guestSessions: number;
-    topPages: { path: string; count: number }[];
-    visitsByDay: { date: string; count: number }[];
-  };
-  recentActivity: { ordersLast30Days: number; listingsLast30Days: number; usersLast30Days: number };
 }
 
 export async function getAdminAnalytics(): Promise<AdminAnalytics> {

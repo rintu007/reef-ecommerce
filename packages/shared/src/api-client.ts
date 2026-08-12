@@ -50,6 +50,7 @@ import type {
   UserSubscription,
 } from "./types/entities";
 import type { PlanSlug, ReportStatus, UserRole } from "./types/enums";
+import type { AdminAnalytics, AdminStats } from "./types/admin";
 
 export class ApiError extends Error {
   status: number;
@@ -295,16 +296,16 @@ export function getPublicProfile(client: ApiClient, id: string) {
 
 // ============================================================== admin
 
-export interface AdminStats {
-  listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
-  users: { total: number };
-  reports: { pending: number };
-  orders: { total: number; completed: number; doa_claim: number };
-  visitors: { total: number; last7Days: number; last30Days: number };
-}
-
 export function getAdminStats(client: ApiClient) {
   return client.get<AdminStats>("/api/admin/stats");
+}
+
+export function getAdminAnalytics(client: ApiClient) {
+  return client.get<AdminAnalytics>("/api/admin/analytics");
+}
+
+export function listAdminOrders(client: ApiClient, params: { limit?: number } = {}) {
+  return client.get<{ orders: Order[] }>(`/api/admin/orders${toQueryString(params)}`);
 }
 
 export function listAdminUsers(client: ApiClient, params: { q?: string; limit?: number; offset?: number } = {}) {
@@ -479,6 +480,10 @@ export function getOrder(client: ApiClient, id: string) {
 
 export function cancelOrder(client: ApiClient, id: string) {
   return client.post<{ order: Order }>(`/api/orders/${id}/cancel`);
+}
+
+export function deleteOrder(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/orders/${id}`);
 }
 
 export function shipOrder(client: ApiClient, id: string, input: ShipOrderInput) {

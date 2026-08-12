@@ -2,7 +2,7 @@ import { deleteOwnAccount, getOwnProfile, updateOwnProfile, LANGUAGES, type Lang
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { Heart, LogOut, Plus, Wrench, X } from "lucide-react-native";
+import { Heart, LogOut, Plus, ShieldCheck, Wrench, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -173,6 +173,16 @@ export default function ProfileScreen() {
             <Text className="text-sm font-semibold text-foreground">Services</Text>
           </Pressable>
         </View>
+
+        {profile?.role === "admin" && (
+          <Pressable
+            onPress={() => router.push("/admin")}
+            className="flex-row items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-3"
+          >
+            <ShieldCheck size={16} color={themeColors.foreground} />
+            <Text className="text-sm font-semibold text-foreground">Admin</Text>
+          </Pressable>
+        )}
 
         <SubscriptionSection />
         <PayoutsSection />

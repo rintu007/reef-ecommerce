@@ -3,10 +3,14 @@ import {
   confirmPickup,
   confirmReceipt,
   createReview,
+  deleteOrder,
+  denyDoaClaim,
   denyPickup,
   fileDoaClaim,
   getOrder,
+  getOwnProfile,
   markPickedUp,
+  refundOrder,
   shipOrder,
   type Order,
 } from "@reef-market/shared";
@@ -17,7 +21,9 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -156,6 +162,7 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
+  const { addItem } = useCart();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,6 +170,8 @@ export default function OrderDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("");
+  const [added, setAdded] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -175,6 +184,13 @@ export default function OrderDetailScreen() {
     const timer = setTimeout(load, 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!session) return;
+    getOwnProfile(apiClient)
+      .then(({ profile }) => setIsAdmin(profile.role === "admin"))
+      .catch(() => {});
+  }, [session]);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -189,6 +205,34 @@ export default function OrderDetailScreen() {
     }
   }
 
+  async function handleDelete() {
+    if (!order) return;
+    const confirmed = await confirmAsync("Delete this order?", "This can't be undone.", "Delete");
+    if (!confirmed) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteOrder(apiClient, order.id);
+      router.back();
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Failed to delete order");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleReAddToCart() {
+    if (!order?.listing_id) return;
+    addItem({
+      listingId: order.listing_id,
+      quantity: order.quantity,
+      shippingMethod: order.shipping_method === "local_pickup" ? "local_pickup" : "shipping",
+      pickupTime: order.pickup_time ?? undefined,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  }
+
   if (loading || !order) {
     return (
       <SafeAreaView className="flex-1 bg-background items-center justify-center">
@@ -198,7 +242,7 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const role: "buyer" | "seller" = order.buyer_id === session?.user.id ? "buyer" : "seller";
+  const role: "buyer" | "seller" | "admin" = isAdmin ? "admin" : order.buyer_id === session?.user.id ? "buyer" : "seller";
   const canReview = role === "buyer" && order.status === "completed" && !!order.listing_id;
 
   return (
@@ -249,8 +293,21 @@ export default function OrderDetailScreen() {
           {error && <Text className="text-sm text-destructive">{error}</Text>}
 
           {role === "buyer" && order.status === "pending" && (
-            <Pressable onPress={() => run(() => cancelOrder(apiClient, order.id))} disabled={busy} className="self-start bg-red-100 rounded-xl px-4 py-2.5">
-              <Text className="text-sm font-semibold text-red-800">Cancel Order</Text>
+            <View className="flex-row gap-2">
+              {order.listing_id && (
+                <Pressable onPress={handleReAddToCart} disabled={busy} className="bg-muted rounded-xl px-4 py-2.5">
+                  <Text className="text-sm font-semibold text-foreground">{added ? "Added ✓" : "Re-add to Cart"}</Text>
+                </Pressable>
+              )}
+              <Pressable onPress={() => run(() => cancelOrder(apiClient, order.id))} disabled={busy} className="bg-red-100 rounded-xl px-4 py-2.5">
+                <Text className="text-sm font-semibold text-red-800">Cancel Order</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {role === "buyer" && order.status === "cancelled" && (
+            <Pressable onPress={handleDelete} disabled={busy} className="self-start bg-red-100 rounded-xl px-4 py-2.5">
+              <Text className="text-sm font-semibold text-red-800">Delete Order</Text>
             </Pressable>
           )}
 
@@ -301,6 +358,35 @@ export default function OrderDetailScreen() {
             <Pressable onPress={() => run(() => markPickedUp(apiClient, order.id))} disabled={busy} className="self-start bg-primary rounded-xl px-4 py-2.5">
               <Text className="text-sm font-semibold text-white">Mark Picked Up</Text>
             </Pressable>
+          )}
+
+          {role === "admin" && order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled" && (
+            <View className="flex-row gap-2">
+              <Pressable onPress={() => run(() => refundOrder(apiClient, order.id, "refund"))} disabled={busy} className="bg-red-100 rounded-xl px-4 py-2.5">
+                <Text className="text-sm font-semibold text-red-800">Refund via Stripe</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => run(() => refundOrder(apiClient, order.id, "store_credit"))}
+                disabled={busy}
+                className="bg-muted rounded-xl px-4 py-2.5"
+              >
+                <Text className="text-sm font-semibold text-foreground">Issue Store Credit</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {role === "admin" && order.doa_claim_status && (
+            <View className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+              <Text className="text-sm font-semibold text-amber-900">
+                DOA claim: <Text className="capitalize">{order.doa_claim_status}</Text>
+              </Text>
+              {order.doa_claim_reason && <Text className="text-sm text-amber-800 mt-1">{order.doa_claim_reason}</Text>}
+              {order.doa_claim_status === "pending" && (
+                <Pressable onPress={() => run(() => denyDoaClaim(apiClient, order.id))} disabled={busy} className="self-start bg-muted rounded-lg px-3 py-2 mt-2">
+                  <Text className="text-xs font-semibold text-foreground">Deny Claim</Text>
+                </Pressable>
+              )}
+            </View>
           )}
 
           {canReview && order.listing_id && <ReviewForm listingId={order.listing_id} />}

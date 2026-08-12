@@ -6,6 +6,7 @@ import {
   cancelOrder,
   confirmPickup,
   confirmReceipt,
+  deleteOrder,
   denyDoaClaim,
   denyPickup,
   fileDoaClaim,
@@ -15,6 +16,7 @@ import {
   type Order,
 } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+import { useCart } from "@/lib/cart-context";
 
 const DOA_ELIGIBLE_STATUSES = ["confirmed", "shipped", "delivered", "awaiting_pickup", "pickup_confirmed", "completed"];
 
@@ -24,12 +26,14 @@ const BTN_SECONDARY = "px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm fo
 
 export function OrderActions({ order, role }: { order: Order; role: "buyer" | "seller" | "admin" }) {
   const router = useRouter();
+  const { addItem } = useCart();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("");
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [claimReason, setClaimReason] = useState("");
+  const [added, setAdded] = useState(false);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -44,6 +48,32 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm("Delete this order? This can't be undone.")) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteOrder(apiClient, order.id);
+      router.push("/orders");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete order");
+      setBusy(false);
+    }
+  }
+
+  function handleReAddToCart() {
+    if (!order.listing_id) return;
+    addItem({
+      listingId: order.listing_id,
+      quantity: order.quantity,
+      shippingMethod: order.shipping_method === "local_pickup" ? "local_pickup" : "shipping",
+      pickupTime: order.pickup_time ?? undefined,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  }
+
   const claimEligible = role === "buyer" && DOA_ELIGIBLE_STATUSES.includes(order.status);
 
   const hasAnyAction =
@@ -52,6 +82,7 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
         order.status === "confirmed" ||
         order.status === "shipped" ||
         order.status === "awaiting_pickup" ||
+        order.status === "cancelled" ||
         claimEligible)) ||
     (role === "seller" && order.status === "confirmed") ||
     (role === "admin" && !!order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled") ||
@@ -64,8 +95,21 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {role === "buyer" && order.status === "pending" && (
-        <button onClick={() => run(() => cancelOrder(apiClient, order.id))} disabled={busy} className={BTN_DANGER}>
-          Cancel Order
+        <div className="flex gap-2">
+          {order.listing_id && (
+            <button onClick={handleReAddToCart} disabled={busy} className={BTN_SECONDARY}>
+              {added ? "Added ✓" : "Re-add to Cart"}
+            </button>
+          )}
+          <button onClick={() => run(() => cancelOrder(apiClient, order.id))} disabled={busy} className={BTN_DANGER}>
+            Cancel Order
+          </button>
+        </div>
+      )}
+
+      {role === "buyer" && order.status === "cancelled" && (
+        <button onClick={handleDelete} disabled={busy} className={BTN_DANGER}>
+          Delete Order
         </button>
       )}
 
