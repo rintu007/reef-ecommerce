@@ -12,30 +12,37 @@ const TAB_ACCENT: Record<HomeTab, string> = {
   learn: "bg-emerald-600",
 };
 
+// Image URLs ported from legacy's MarketSelector.jsx — same hotlinked Unsplash
+// / base44 CDN photos legacy used for these cards, kept here (rather than
+// solid gradients) because the user flagged the flat-color version as missing
+// the "nice background image" legacy has on every category card.
 const CATEGORY_CARDS = [
   {
     market: "saltwater" as const,
     emoji: "🪸",
     label: "Saltwater",
     subtitle: "Corals · Reef Fish · Equipment",
-    gradient: "from-cyan-500 to-blue-800",
+    image: "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=900&q=85",
+    overlay: "from-cyan-500/55 to-blue-900/85",
   },
   {
     market: "freshwater" as const,
     emoji: "🐟",
     label: "Freshwater",
     subtitle: "Fish · Amphibians · Plants · Equipment",
-    gradient: "from-emerald-500 to-teal-800",
+    image:
+      "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/d9e02985b_360_F_442044627_gYizFV5eCOJLKCxAaXyG47Lq1ow5LsmN.jpg",
+    overlay: "from-green-800/50 to-emerald-950/85",
   },
 ];
 
 const SELL_CATEGORIES = [
-  { emoji: "🪸", label: "Corals", desc: "Frags & colonies", gradient: "from-cyan-500 to-blue-900" },
-  { emoji: "🐠", label: "Reef Fish", desc: "Clownfish, tangs...", gradient: "from-orange-400 to-rose-800" },
-  { emoji: "🐟", label: "FW Fish", desc: "Cichlids, bettas...", gradient: "from-green-600 to-emerald-950" },
-  { emoji: "🦎", label: "Amphibians", desc: "Axolotls, frogs...", gradient: "from-lime-600 to-green-950" },
-  { emoji: "🔧", label: "Equipment", desc: "Tanks, lights, pumps", gradient: "from-slate-600 to-slate-950" },
-  { emoji: "🌿", label: "Plants & More", desc: "Plants, inverts, food", gradient: "from-teal-600 to-teal-950" },
+  { emoji: "🪸", label: "Corals", desc: "Frags & colonies", image: "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=400&q=80" },
+  { emoji: "🐠", label: "Reef Fish", desc: "Clownfish, tangs...", image: "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=400&q=80" },
+  { emoji: "🐟", label: "FW Fish", desc: "Cichlids, bettas...", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/67df2e37b_generated_image.png" },
+  { emoji: "🦎", label: "Amphibians", desc: "Axolotls, frogs...", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/e49fee415_generated_image.png" },
+  { emoji: "🔧", label: "Equipment", desc: "Tanks, lights, pumps", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/4c2b2708e_generated_image.png" },
+  { emoji: "🌿", label: "Plants & More", desc: "Plants, inverts, food", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/8c3afb853_generated_image.png" },
 ];
 
 /**
@@ -80,11 +87,14 @@ export function HomeTabs({ previews }: { previews: Record<"saltwater" | "freshwa
                 <div key={card.market} className="bg-white/10 rounded-3xl p-4 border border-white/10">
                   <Link
                     href={`/browse?market=${card.market}`}
-                    className={`block rounded-2xl h-40 bg-gradient-to-br ${card.gradient} flex flex-col items-center justify-center gap-1.5`}
+                    className="relative block rounded-2xl h-40 overflow-hidden flex flex-col items-center justify-center gap-1.5"
                   >
-                    <span className="text-5xl drop-shadow-lg">{card.emoji}</span>
-                    <span className="text-2xl font-extrabold text-white tracking-tight">{card.label}</span>
-                    <span className="text-white/90 text-xs font-medium bg-black/20 px-3 py-0.5 rounded-full">{card.subtitle}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={card.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${card.overlay}`} />
+                    <span className="relative text-5xl drop-shadow-lg">{card.emoji}</span>
+                    <span className="relative text-2xl font-extrabold text-white tracking-tight">{card.label}</span>
+                    <span className="relative text-white/90 text-xs font-medium bg-black/20 px-3 py-0.5 rounded-full">{card.subtitle}</span>
                   </Link>
 
                   {listings.length > 0 && (
@@ -129,14 +139,13 @@ export function HomeTabs({ previews }: { previews: Record<"saltwater" | "freshwa
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
             {SELL_CATEGORIES.map((cat) => (
-              <Link
-                key={cat.label}
-                href="/sell"
-                className={`rounded-2xl h-28 p-3 flex flex-col justify-end bg-gradient-to-br ${cat.gradient}`}
-              >
-                <span className="text-xl">{cat.emoji}</span>
-                <span className="text-white text-sm font-bold mt-0.5">{cat.label}</span>
-                <span className="text-white/70 text-[10px]">{cat.desc}</span>
+              <Link key={cat.label} href="/sell" className="relative rounded-2xl h-28 overflow-hidden p-3 flex flex-col justify-end">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cat.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <span className="relative text-xl">{cat.emoji}</span>
+                <span className="relative text-white text-sm font-bold mt-0.5">{cat.label}</span>
+                <span className="relative text-white/70 text-[10px]">{cat.desc}</span>
               </Link>
             ))}
           </div>

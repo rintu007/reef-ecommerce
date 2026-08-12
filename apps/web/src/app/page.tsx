@@ -7,8 +7,7 @@ import { HomeTabs } from "./HomeTabs";
  * pages/Home.jsx — web's root previously just `redirect("/browse")`, with no
  * Home landing page at all (unlike mobile, which at least had a guest-facing
  * Learn link). The Browse/Sell/Learn tabs below switch content in place
- * (via <HomeTabs>) rather than navigating away immediately — solid
- * gradients replace legacy's hotlinked stock photography.
+ * (via <HomeTabs>) rather than navigating away immediately.
  */
 export default async function HomePage() {
   const viewer = await getAuthenticatedUser();

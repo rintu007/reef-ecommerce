@@ -19,13 +19,17 @@ const TAB_ACCENT: Record<HomeTab, string> = {
   learn: "#16a34a",
 };
 
-const SELL_CATEGORIES: { emoji: string; label: string; desc: string; colors: [string, string] }[] = [
-  { emoji: "🪸", label: "Corals", desc: "Frags & colonies", colors: ["#0ea5c9", "#0b3d6b"] },
-  { emoji: "🐠", label: "Reef Fish", desc: "Clownfish, tangs...", colors: ["#f97316", "#9f1239"] },
-  { emoji: "🐟", label: "FW Fish", desc: "Cichlids, bettas...", colors: ["#16a34a", "#064e3b"] },
-  { emoji: "🦎", label: "Amphibians", desc: "Axolotls, frogs...", colors: ["#65a30d", "#14532d"] },
-  { emoji: "🔧", label: "Equipment", desc: "Tanks, lights, pumps", colors: ["#475569", "#0f172a"] },
-  { emoji: "🌿", label: "Plants & More", desc: "Plants, inverts, food", colors: ["#0d9488", "#134e4a"] },
+// Image URLs ported from legacy's MarketSelector.jsx — same hotlinked Unsplash /
+// base44 CDN photos legacy used for these cards, kept here (rather than solid
+// gradients) because the user flagged the flat-color version as missing the
+// "nice background image" legacy has on every category card.
+const SELL_CATEGORIES: { emoji: string; label: string; desc: string; image: string }[] = [
+  { emoji: "🪸", label: "Corals", desc: "Frags & colonies", image: "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=400&q=80" },
+  { emoji: "🐠", label: "Reef Fish", desc: "Clownfish, tangs...", image: "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=400&q=80" },
+  { emoji: "🐟", label: "FW Fish", desc: "Cichlids, bettas...", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/67df2e37b_generated_image.png" },
+  { emoji: "🦎", label: "Amphibians", desc: "Axolotls, frogs...", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/e49fee415_generated_image.png" },
+  { emoji: "🔧", label: "Equipment", desc: "Tanks, lights, pumps", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/4c2b2708e_generated_image.png" },
+  { emoji: "🌿", label: "Plants & More", desc: "Plants, inverts, food", image: "https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/8c3afb853_generated_image.png" },
 ];
 
 /**
@@ -36,9 +40,7 @@ const SELL_CATEGORIES: { emoji: string; label: string; desc: string; colors: [st
  * legacy) rather than navigating away immediately — tapping "Sell" used to
  * jump straight to a sign-in/agreement wall, which was a parity gap: legacy
  * shows a category teaser first and only requires auth once the user picks a
- * category or taps "Create a Listing". Solid-color gradients replace
- * legacy's hotlinked stock photography for the category cards, for the same
- * reason apps/mobile avoids other external image deps.
+ * category or taps "Create a Listing".
  */
 function PreviewRow({ market, label }: { market: "saltwater" | "freshwater"; label: string }) {
   const router = useRouter();
@@ -91,26 +93,33 @@ function CategoryCard({
   emoji,
   label,
   subtitle,
-  colors,
+  image,
+  overlayColors,
   market,
 }: {
   emoji: string;
   label: string;
   subtitle: string;
-  colors: [string, string];
+  image: string;
+  overlayColors: [string, string];
   market: "saltwater" | "freshwater";
 }) {
   const router = useRouter();
   return (
     <View className="bg-white/10 rounded-3xl p-4 border border-white/10">
       <Pressable onPress={() => router.push({ pathname: "/(tabs)/browse", params: { market } })}>
-        <LinearGradient colors={colors} style={{ borderRadius: 16, height: 140, alignItems: "center", justifyContent: "center", gap: 4 }}>
-          <Text style={{ fontSize: 44 }}>{emoji}</Text>
-          <Text className="text-white text-xl font-extrabold">{label}</Text>
-          <View className="bg-black/20 rounded-full px-3 py-0.5">
-            <Text className="text-white/90 text-xs font-medium">{subtitle}</Text>
-          </View>
-        </LinearGradient>
+        <View style={{ borderRadius: 16, height: 140, overflow: "hidden" }}>
+          <Image source={{ uri: image }} style={{ position: "absolute", width: "100%", height: "100%" }} contentFit="cover" />
+          <LinearGradient colors={overlayColors} style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <Text style={{ fontSize: 44 }}>{emoji}</Text>
+            <Text className="text-white text-xl font-extrabold" style={{ textShadowColor: "rgba(0,0,0,0.4)", textShadowRadius: 6 }}>
+              {label}
+            </Text>
+            <View className="bg-black/20 rounded-full px-3 py-0.5">
+              <Text className="text-white/90 text-xs font-medium">{subtitle}</Text>
+            </View>
+          </LinearGradient>
+        </View>
       </Pressable>
       <PreviewRow market={market} label={label} />
     </View>
@@ -130,14 +139,16 @@ function BrowseTabContent() {
           emoji="🪸"
           label="Saltwater"
           subtitle="Corals · Reef Fish · Equipment"
-          colors={["#0ea5c9", "#0b3d6b"]}
+          image="https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=900&q=85"
+          overlayColors={["rgba(14,165,201,0.55)", "rgba(11,61,107,0.85)"]}
           market="saltwater"
         />
         <CategoryCard
           emoji="🐟"
           label="Freshwater"
           subtitle="Fish · Amphibians · Plants · Equipment"
-          colors={["#16a34a", "#064e3b"]}
+          image="https://media.base44.com/images/public/69cd3d0cc5454eb378341b93/d9e02985b_360_F_442044627_gYizFV5eCOJLKCxAaXyG47Lq1ow5LsmN.jpg"
+          overlayColors={["rgba(22,74,49,0.5)", "rgba(6,78,59,0.85)"]}
           market="freshwater"
         />
       </View>
@@ -156,8 +167,9 @@ function SellTabContent() {
 
       <View className="flex-row flex-wrap gap-3">
         {SELL_CATEGORIES.map((cat) => (
-          <Pressable key={cat.label} onPress={() => router.push("/listing/new")} className="rounded-2xl overflow-hidden" style={{ width: "47%" }}>
-            <LinearGradient colors={cat.colors} style={{ height: 110, padding: 10, justifyContent: "flex-end" }}>
+          <Pressable key={cat.label} onPress={() => router.push("/listing/new")} className="rounded-2xl overflow-hidden" style={{ width: "47%", height: 110 }}>
+            <Image source={{ uri: cat.image }} style={{ position: "absolute", width: "100%", height: "100%" }} contentFit="cover" />
+            <LinearGradient colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.85)"]} style={{ flex: 1, padding: 10, justifyContent: "flex-end" }}>
               <Text style={{ fontSize: 20 }}>{cat.emoji}</Text>
               <Text className="text-white text-sm font-bold mt-0.5">{cat.label}</Text>
               <Text className="text-white/70 text-[10px]">{cat.desc}</Text>
