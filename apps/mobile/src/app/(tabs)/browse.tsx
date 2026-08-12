@@ -7,7 +7,7 @@ import {
   type Listing,
   type ListingType,
 } from "@reef-market/shared";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { ShoppingCart, SlidersHorizontal, Search, X, MapPin } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
@@ -47,8 +47,9 @@ export default function BrowseScreen() {
   const { session } = useAuth();
   const { savedIds, toggle } = useWatchlist();
   const { count: cartCount } = useCart();
+  const params = useLocalSearchParams<{ market?: string }>();
 
-  const [market, setMarket] = useState<Market>("saltwater");
+  const [market, setMarket] = useState<Market>(params.market === "freshwater" ? "freshwater" : "saltwater");
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<ListingType | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
