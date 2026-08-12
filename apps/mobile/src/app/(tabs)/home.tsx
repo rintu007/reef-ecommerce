@@ -1,8 +1,8 @@
-import { listListings, type Listing } from "@reef-market/shared";
+import { HELP_CATEGORIES, listListings, type Listing } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { BookOpen, ChevronRight, ShoppingBag, Waves } from "lucide-react-native";
+import { BookOpen, ChevronRight, ShoppingBag, Star, Waves } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,20 +11,36 @@ import { themeColors } from "@/lib/theme-colors";
 
 const PLACEHOLDER_PHOTO = "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=400&q=80";
 
+type HomeTab = "browse" | "sell" | "learn";
+
+const TAB_ACCENT: Record<HomeTab, string> = {
+  browse: "#0ea5c9",
+  sell: "#f97316",
+  learn: "#16a34a",
+};
+
+const SELL_CATEGORIES: { emoji: string; label: string; desc: string; colors: [string, string] }[] = [
+  { emoji: "🪸", label: "Corals", desc: "Frags & colonies", colors: ["#0ea5c9", "#0b3d6b"] },
+  { emoji: "🐠", label: "Reef Fish", desc: "Clownfish, tangs...", colors: ["#f97316", "#9f1239"] },
+  { emoji: "🐟", label: "FW Fish", desc: "Cichlids, bettas...", colors: ["#16a34a", "#064e3b"] },
+  { emoji: "🦎", label: "Amphibians", desc: "Axolotls, frogs...", colors: ["#65a30d", "#14532d"] },
+  { emoji: "🔧", label: "Equipment", desc: "Tanks, lights, pumps", colors: ["#475569", "#0f172a"] },
+  { emoji: "🌿", label: "Plants & More", desc: "Plants, inverts, food", colors: ["#0d9488", "#134e4a"] },
+];
+
 /**
  * Legacy parity: legacy/vite-app/src/components/home/MarketSelector.jsx +
  * pages/Home.jsx — a real Home landing screen distinct from Browse, with a
- * hero, Browse/Sell/Learn quick actions, and Saltwater/Freshwater category
- * cards each with a "New" preview row. Simplified vs. legacy: the
- * quick-action cards here just navigate to the real Browse/Sell/Learn
- * screens instead of duplicating a second copy of their content inline
- * (legacy's inline mini-Sell-grid and mini-Learn-topic-list existed because
- * MarketSelector predates this rebuild's full Sell/Learn screens — linking
- * out avoids maintaining two copies of the same content). Solid-color
- * gradients replace legacy's hotlinked stock photography for the category
- * cards, for the same reason apps/mobile avoids other external image deps.
+ * hero, Browse/Sell/Learn tabs, and Saltwater/Freshwater category cards each
+ * with a "New" preview row. The three tabs switch content in place (matching
+ * legacy) rather than navigating away immediately — tapping "Sell" used to
+ * jump straight to a sign-in/agreement wall, which was a parity gap: legacy
+ * shows a category teaser first and only requires auth once the user picks a
+ * category or taps "Create a Listing". Solid-color gradients replace
+ * legacy's hotlinked stock photography for the category cards, for the same
+ * reason apps/mobile avoids other external image deps.
  */
-function PreviewRow({ market, label, color }: { market: "saltwater" | "freshwater"; label: string; color: string }) {
+function PreviewRow({ market, label }: { market: "saltwater" | "freshwater"; label: string }) {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
 
@@ -96,13 +112,122 @@ function CategoryCard({
           </View>
         </LinearGradient>
       </Pressable>
-      <PreviewRow market={market} label={label} color={colors[0]} />
+      <PreviewRow market={market} label={label} />
+    </View>
+  );
+}
+
+function BrowseTabContent() {
+  return (
+    <>
+      <View className="items-center mb-4">
+        <Text className="text-lg font-extrabold text-white">What are you shopping for?</Text>
+        <Text className="text-white/50 text-xs mt-0.5">Tap a market to start browsing</Text>
+      </View>
+
+      <View className="px-5 gap-4">
+        <CategoryCard
+          emoji="🪸"
+          label="Saltwater"
+          subtitle="Corals · Reef Fish · Equipment"
+          colors={["#0ea5c9", "#0b3d6b"]}
+          market="saltwater"
+        />
+        <CategoryCard
+          emoji="🐟"
+          label="Freshwater"
+          subtitle="Fish · Amphibians · Plants · Equipment"
+          colors={["#16a34a", "#064e3b"]}
+          market="freshwater"
+        />
+      </View>
+    </>
+  );
+}
+
+function SellTabContent() {
+  const router = useRouter();
+  return (
+    <View className="px-5 gap-5">
+      <View className="items-center">
+        <Text className="text-xl font-extrabold text-white">Start Selling Today</Text>
+        <Text className="text-white/60 text-sm mt-1">List corals, fish, amphibians & gear</Text>
+      </View>
+
+      <View className="flex-row flex-wrap gap-3">
+        {SELL_CATEGORIES.map((cat) => (
+          <Pressable key={cat.label} onPress={() => router.push("/listing/new")} className="rounded-2xl overflow-hidden" style={{ width: "47%" }}>
+            <LinearGradient colors={cat.colors} style={{ height: 110, padding: 10, justifyContent: "flex-end" }}>
+              <Text style={{ fontSize: 20 }}>{cat.emoji}</Text>
+              <Text className="text-white text-sm font-bold mt-0.5">{cat.label}</Text>
+              <Text className="text-white/70 text-[10px]">{cat.desc}</Text>
+            </LinearGradient>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable
+        onPress={() => router.push("/listing/new")}
+        className="h-14 rounded-2xl bg-white items-center justify-center flex-row gap-2"
+      >
+        <ShoppingBag size={18} color="#0f172a" />
+        <Text className="text-slate-900 font-extrabold text-base">Create a Listing</Text>
+      </Pressable>
+
+      <View className="bg-white/10 rounded-2xl p-4 border border-white/10">
+        <View className="flex-row items-center gap-1.5 mb-2">
+          <Star size={16} color="#facc15" />
+          <Text className="text-white font-bold">Why sell here?</Text>
+        </View>
+        <View className="gap-1.5">
+          {[
+            "Built for aquarium hobbyists",
+            "Buyer protection on every order",
+            "Easy photo uploads & listing tools",
+            "Reach thousands of buyers nationwide",
+          ].map((line) => (
+            <Text key={line} className="text-white/70 text-sm">
+              ✅ {line}
+            </Text>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function LearnTabContent() {
+  const router = useRouter();
+  return (
+    <View className="px-5 gap-3">
+      <View className="items-center mb-2">
+        <Text className="text-xl font-extrabold text-white">Learn & Explore</Text>
+        <Text className="text-white/60 text-sm mt-1">Guides, tips & care info for hobbyists</Text>
+      </View>
+
+      {HELP_CATEGORIES.slice(0, 6).map((cat) => (
+        <Pressable
+          key={cat.value}
+          onPress={() => router.push("/learn")}
+          className="rounded-2xl h-16 bg-white/10 border border-white/10 flex-row items-center px-4 gap-3"
+        >
+          <Text style={{ fontSize: 26 }}>{cat.icon}</Text>
+          <Text className="text-white font-bold text-sm flex-1">{cat.label}</Text>
+          <ChevronRight size={18} color="rgba(255,255,255,0.5)" />
+        </Pressable>
+      ))}
     </View>
   );
 }
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<HomeTab>("browse");
+
+  const tabs: { id: HomeTab; label: string; icon: typeof Waves }[] = [
+    { id: "browse", label: "Browse", icon: Waves },
+    { id: "sell", label: "Sell", icon: ShoppingBag },
+    { id: "learn", label: "Learn", icon: BookOpen },
+  ];
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
@@ -117,41 +242,31 @@ export default function HomeScreen() {
           </View>
 
           <View className="flex-row mx-5 gap-2 mb-5">
-            <Pressable onPress={() => router.push("/(tabs)/browse")} className="flex-1 h-16 rounded-2xl bg-white/15 items-center justify-center gap-1">
-              <Waves size={18} color={themeColors.white} />
-              <Text className="text-white font-bold text-xs">Browse</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("/(tabs)/sell")} className="flex-1 h-16 rounded-2xl bg-white/15 items-center justify-center gap-1">
-              <ShoppingBag size={18} color={themeColors.white} />
-              <Text className="text-white font-bold text-xs">Sell</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("/learn")} className="flex-1 h-16 rounded-2xl bg-white/15 items-center justify-center gap-1">
-              <BookOpen size={18} color={themeColors.white} />
-              <Text className="text-white font-bold text-xs">Learn</Text>
-            </Pressable>
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <Pressable
+                  key={tab.id}
+                  testID={`home-tab-${tab.id}`}
+                  onPress={() => setActiveTab(tab.id)}
+                  className="flex-1 h-16 rounded-2xl items-center justify-center gap-1"
+                  style={{
+                    backgroundColor: isActive ? TAB_ACCENT[tab.id] : "rgba(255,255,255,0.15)",
+                    borderWidth: isActive ? 1 : 0,
+                    borderColor: "rgba(255,255,255,0.6)",
+                  }}
+                >
+                  <Icon size={18} color={themeColors.white} />
+                  <Text className="text-white font-bold text-xs">{tab.label}</Text>
+                </Pressable>
+              );
+            })}
           </View>
 
-          <View className="items-center mb-4">
-            <Text className="text-lg font-extrabold text-white">What are you shopping for?</Text>
-            <Text className="text-white/50 text-xs mt-0.5">Tap a market to start browsing</Text>
-          </View>
-
-          <View className="px-5 gap-4">
-            <CategoryCard
-              emoji="🪸"
-              label="Saltwater"
-              subtitle="Corals · Reef Fish · Equipment"
-              colors={["#0ea5c9", "#0b3d6b"]}
-              market="saltwater"
-            />
-            <CategoryCard
-              emoji="🐟"
-              label="Freshwater"
-              subtitle="Fish · Amphibians · Plants · Equipment"
-              colors={["#16a34a", "#064e3b"]}
-              market="freshwater"
-            />
-          </View>
+          {activeTab === "browse" && <BrowseTabContent />}
+          {activeTab === "sell" && <SellTabContent />}
+          {activeTab === "learn" && <LearnTabContent />}
         </ScrollView>
       </LinearGradient>
     </SafeAreaView>
