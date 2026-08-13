@@ -137,9 +137,7 @@ export default function SignInScreen() {
           <View className="flex-row items-center justify-between mb-1">
             <Text className="text-sm font-medium text-muted-foreground">Password</Text>
             {mode === "sign-in" && (
-              <Pressable
-                onPress={() => WebBrowser.openBrowserAsync(`${process.env.EXPO_PUBLIC_API_URL}/forgot-password`)}
-              >
+              <Pressable onPress={() => router.push("/forgot-password")}>
                 <Text className="text-xs text-primary">Forgot password?</Text>
               </Pressable>
             )}
