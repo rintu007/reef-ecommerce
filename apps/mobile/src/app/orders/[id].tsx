@@ -10,6 +10,7 @@ import {
   getOrder,
   getOwnProfile,
   markPickedUp,
+  ORDER_STATUS_META,
   refundOrder,
   shipOrder,
   type Order,
@@ -25,6 +26,8 @@ import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
+import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -213,7 +216,7 @@ export default function OrderDetailScreen() {
     setError(null);
     try {
       await deleteOrder(apiClient, order.id);
-      router.back();
+      safeGoBack(router);
     } catch (err) {
       notify("Error", err instanceof Error ? err.message : "Failed to delete order");
     } finally {
@@ -249,7 +252,7 @@ export default function OrderDetailScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+        <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Order Details</Text>
@@ -279,8 +282,12 @@ export default function OrderDetailScreen() {
             </View>
           </View>
 
-          <View className="border-t border-border pt-2">
-            <Row label="Status" value={order.status.replace("_", " ")} />
+          <View className="border-t border-border pt-2 gap-1.5">
+            <View className="flex-row justify-between items-center py-1">
+              <Text className="text-sm text-muted-foreground">Status</Text>
+              <OrderStatusBadge status={order.status} />
+            </View>
+            <Text className="text-xs text-muted-foreground -mt-1 mb-1">{ORDER_STATUS_META[order.status].description}</Text>
             <Row label="Total charged" value={order.total_charged != null ? `$${order.total_charged.toFixed(2)}` : "—"} />
             <Row label="Delivery" value={order.shipping_method === "shipping" ? "Shipping" : "Local pickup"} />
             {order.tracking_number && (

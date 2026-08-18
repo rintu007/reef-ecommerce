@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 function Section({ title, children }: { title: string; children: string }) {
   return (
@@ -17,7 +18,7 @@ export default function TermsScreen() {
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="flex-row items-center gap-3 px-4 py-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="p-1 -ml-1">
+        <Pressable onPress={() => safeGoBack(router)} className="p-1 -ml-1">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="font-bold text-base text-foreground">Terms of Service</Text>

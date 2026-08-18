@@ -2,17 +2,22 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import * as Linking from "expo-linking";
-import { supabase } from "@/lib/supabase";
+import { forgotPassword } from "@reef-market/shared";
+import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 /**
- * Fully native — no browser hop. The original version opened
- * `${EXPO_PUBLIC_API_URL}/forgot-password` in a WebBrowser tab, which the
- * user flagged: "it should happen in app". `resetPasswordForEmail` is just
- * an API call, so it never needed a browser at all; only the *reset* step
- * (after tapping the emailed link) needs a redirect target, handled by
- * reset-password.tsx via the app's `reefmarket://` deep link scheme.
+ * Fully native — no browser hop for *this* screen; requesting the reset is
+ * just an API call. The emailed link itself opens in a browser though (see
+ * apps/web/src/app/api/auth/forgot-password/route.ts): Supabase's own
+ * resetPasswordForEmail builds its link from the project's Auth "Site URL"
+ * dashboard setting, which was still pointed at localhost from initial
+ * setup and neither this repo nor this deploy can reach that config. The
+ * backend bypasses it entirely — generates the token via the Admin API and
+ * emails a link to the web app's /reset-password page instead of relying
+ * on a `reefmarket://` deep link, sidestepping that dashboard dependency
+ * altogether.
  */
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -24,10 +29,7 @@ export default function ForgotPasswordScreen() {
     setError(null);
     setLoading(true);
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: Linking.createURL("reset-password"),
-      });
-      if (resetError) throw resetError;
+      await forgotPassword(apiClient, email);
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -44,7 +46,7 @@ export default function ForgotPasswordScreen() {
           <Text className="text-sm text-muted-foreground text-center">
             If an account exists for {email}, we&apos;ve sent a link to reset your password.
           </Text>
-          <Pressable onPress={() => router.back()} className="mt-2">
+          <Pressable onPress={() => safeGoBack(router)} className="mt-2">
             <Text className="text-sm text-primary text-center">Back to Sign In</Text>
           </Pressable>
         </View>
@@ -81,7 +83,7 @@ export default function ForgotPasswordScreen() {
           {loading ? <ActivityIndicator color={themeColors.white} /> : <Text className="text-white font-semibold text-sm">Send reset link</Text>}
         </Pressable>
 
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => safeGoBack(router)}>
           <Text className="text-sm text-primary text-center">Back to Sign In</Text>
         </Pressable>
       </View>

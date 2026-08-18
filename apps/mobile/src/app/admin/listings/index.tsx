@@ -1,7 +1,7 @@
 import { deleteListing, listListings, updateListing, type Listing, type ListingStatus } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useFocusEffect, useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Ban, Check, Star, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { AdminGate } from "@/components/AdminGate";
 import { apiClient } from "@/lib/api-client";
 import { confirmAsync, notify } from "@/lib/alert";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 // Mirrors apps/web/src/app/admin/listings/AdminListingsTable.tsx's STATUS_TABS exactly.
 const STATUS_TABS: { value: ListingStatus | "all"; label: string }[] = [
@@ -23,6 +24,32 @@ function StatusTab({ label, active, onPress }: { label: string; active: boolean;
   return (
     <Pressable onPress={onPress} className={`px-3 py-1.5 rounded-full ${active ? "bg-primary" : "bg-muted"}`}>
       <Text className={`text-xs font-semibold ${active ? "text-white" : "text-muted-foreground"}`}>{label}</Text>
+    </Pressable>
+  );
+}
+
+type IconType = typeof Check;
+
+/** One cell in the row-action footer bar — icon + label, evenly spaced, proper tap target. */
+function RowAction({
+  icon: Icon,
+  label,
+  color,
+  onPress,
+  disabled,
+}: {
+  icon: IconType;
+  label: string;
+  color: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} className="flex-1 items-center justify-center gap-1 py-2.5" style={{ opacity: disabled ? 0.4 : 1 }}>
+      <Icon size={15} color={color} />
+      <Text className="text-[10px] font-semibold" style={{ color }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -138,46 +165,39 @@ function AdminListingsContent() {
           renderItem={({ item }) => {
             const isBusy = busyId === item.id;
             return (
-              <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
-                <View className="w-12 h-12 rounded-lg overflow-hidden bg-muted shrink-0">
-                  {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: 48, height: 48 }} contentFit="cover" />}
-                </View>
-                <Link href={`/listing/${item.id}`} asChild>
-                  <Pressable className="flex-1 min-w-0">
-                    <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text className="text-xs text-muted-foreground mt-0.5">
-                      ${item.price.toFixed(2)} · {item.status.replace("_", " ")}
-                      {item.featured ? " · featured" : ""}
-                    </Text>
-                  </Pressable>
-                </Link>
-                <View className="gap-1.5 items-end shrink-0">
-                  {item.status !== "active" && (
-                    <Pressable onPress={() => approve(item.id)} disabled={isBusy}>
-                      <Text className="text-xs font-semibold text-emerald-600" style={{ opacity: isBusy ? 0.5 : 1 }}>
-                        Approve
+              <View className="rounded-xl border border-border bg-card overflow-hidden">
+                <View className="flex-row items-center gap-3 p-3">
+                  <View className="w-12 h-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                    {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: 48, height: 48 }} contentFit="cover" />}
+                  </View>
+                  <Link href={`/listing/${item.id}`} asChild>
+                    <Pressable className="flex-1 min-w-0">
+                      <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text className="text-xs text-muted-foreground mt-0.5">
+                        ${item.price.toFixed(2)} · {item.status.replace("_", " ")}
+                        {item.featured ? " · featured" : ""}
                       </Text>
                     </Pressable>
+                  </Link>
+                  {isBusy && <ActivityIndicator size="small" color={themeColors.primary} />}
+                </View>
+                <View className="flex-row items-stretch border-t border-border">
+                  {item.status !== "active" && (
+                    <RowAction icon={Check} label="Approve" color="#059669" onPress={() => approve(item.id)} disabled={isBusy} />
                   )}
                   {item.status !== "removed" && (
-                    <Pressable onPress={() => remove(item.id)} disabled={isBusy}>
-                      <Text className="text-xs font-semibold text-amber-600" style={{ opacity: isBusy ? 0.5 : 1 }}>
-                        Remove
-                      </Text>
-                    </Pressable>
+                    <RowAction icon={Ban} label="Remove" color="#d97706" onPress={() => remove(item.id)} disabled={isBusy} />
                   )}
-                  <Pressable onPress={() => toggleFeatured(item)} disabled={isBusy}>
-                    <Text className="text-xs font-semibold text-primary" style={{ opacity: isBusy ? 0.5 : 1 }}>
-                      {item.featured ? "Unfeature" : "Feature"}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => hardDelete(item.id)} disabled={isBusy}>
-                    <Text className="text-xs font-semibold text-destructive" style={{ opacity: isBusy ? 0.5 : 1 }}>
-                      Delete
-                    </Text>
-                  </Pressable>
+                  <RowAction
+                    icon={Star}
+                    label={item.featured ? "Unfeature" : "Feature"}
+                    color={themeColors.primary}
+                    onPress={() => toggleFeatured(item)}
+                    disabled={isBusy}
+                  />
+                  <RowAction icon={Trash2} label="Delete" color={themeColors.destructive} onPress={() => hardDelete(item.id)} disabled={isBusy} />
                 </View>
               </View>
             );
@@ -195,7 +215,7 @@ export default function AdminListingsScreen() {
       <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-          <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+          <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
             <ArrowLeft size={20} color={themeColors.foreground} />
           </Pressable>
           <Text className="text-base font-semibold text-foreground">Listing Moderation</Text>

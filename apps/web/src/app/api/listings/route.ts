@@ -20,7 +20,10 @@ export async function GET(request: Request) {
     const lng = searchParams.get("lng");
     const radiusMiles = searchParams.get("radius_miles");
 
+    const idsParam = searchParams.get("ids");
+
     const params: ListingQueryParams = {
+      ids: idsParam ? idsParam.split(",").filter(Boolean) : undefined,
       sellerId: searchParams.get("seller_id") ?? undefined,
       status: searchParams.get("status") ?? undefined,
       market: market === "saltwater" || market === "freshwater" ? market : undefined,

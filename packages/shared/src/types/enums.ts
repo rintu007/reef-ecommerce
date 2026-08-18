@@ -30,7 +30,7 @@ export const serviceStatusSchema = z.enum(["active", "paused", "removed"]);
 export const orderShippingMethodSchema = z.enum(["shipping", "local_pickup"]);
 export const orderStatusSchema = z.enum([
   "pending", "confirmed", "shipped", "delivered", "completed",
-  "cancelled", "doa_claim", "awaiting_pickup", "pickup_confirmed",
+  "cancelled", "doa_claim", "awaiting_pickup", "pickup_confirmed", "refunded",
 ]);
 export const doaClaimReviewStatusSchema = z.enum(["pending", "approved", "denied"]);
 

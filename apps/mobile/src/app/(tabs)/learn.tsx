@@ -9,6 +9,7 @@ import { ArrowLeft, BookOpen, ChevronRight, HelpCircle, Lightbulb, Play } from "
 import { HELP_CATEGORIES, listHelpContent, type HelpContent } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 // Ported from legacy/vite-app/src/pages/Learn.jsx's CATEGORY_VISUALS.
 const CATEGORY_VISUALS: Record<string, { bg: string; desc: string }> = {
@@ -113,7 +114,7 @@ export default function LearnScreen() {
             colors={["rgba(11,129,183,0.9)", "rgba(11,129,183,0.6)"]}
             style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}
           >
-            <Pressable testID="learn-hero-back" onPress={() => router.back()} className="mb-3 self-start p-1 -ml-1">
+            <Pressable testID="learn-hero-back" onPress={() => safeGoBack(router)} className="mb-3 self-start p-1 -ml-1">
               <ArrowLeft size={20} color={themeColors.white} />
             </Pressable>
             <Text className="text-3xl text-center text-white mb-1">≋</Text>

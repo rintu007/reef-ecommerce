@@ -8,6 +8,8 @@ export interface ListingLimitStatus {
 }
 
 export interface ListingQueryParams {
+  /** Exact-ID batch lookup (e.g. cart rehydration) — one round trip instead of N. */
+  ids?: string[];
   sellerId?: string;
   status?: string;
   market?: "saltwater" | "freshwater";
@@ -46,6 +48,7 @@ export async function queryListings(
   let query = db.from("listings").select("*", { count: "exact" });
 
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
+  if (params.ids && params.ids.length > 0) query = query.in("id", params.ids);
 
   // Hides listings from sellers the viewer has blocked — only applied to the
   // general browse feed, not when a specific seller's storefront is requested.
@@ -57,7 +60,11 @@ export async function queryListings(
 
   if (isOwnerOrAdmin) {
     if (params.status) query = query.eq("status", params.status);
-  } else {
+  } else if (!params.ids) {
+    // Public browse: only ever show active listings. Explicit ID lookups
+    // (cart rehydration) bypass this — the caller already knows which IDs it
+    // wants and needs them regardless of status (sold out, etc.) to render
+    // "remove this" UI correctly.
     query = query.eq("status", "active");
   }
 

@@ -8,21 +8,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
-
-// Mirrors apps/web/src/app/admin/orders/page.tsx's STATUS_STYLES, translated from
-// Tailwind gray/blue/indigo/etc classes to fixed hex values the same way
-// apps/mobile/src/app/(tabs)/orders.tsx already does for the buyer/seller order list.
-const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  pending: { bg: "#f3f4f6", text: "#374151" },
-  confirmed: { bg: "#dbeafe", text: "#1e40af" },
-  shipped: { bg: "#e0e7ff", text: "#3730a3" },
-  delivered: { bg: "#e0e7ff", text: "#3730a3" },
-  awaiting_pickup: { bg: "#fef9c3", text: "#854d0e" },
-  completed: { bg: "#d1fae5", text: "#065f46" },
-  cancelled: { bg: "#e5e7eb", text: "#374151" },
-  doa_claim: { bg: "#fee2e2", text: "#991b1b" },
-  pickup_confirmed: { bg: "#d1fae5", text: "#065f46" },
-};
+import { safeGoBack } from "@/lib/navigation";
+import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 const CLAIM_PENDING_STYLE = { bg: "#fef3c7", text: "#92400e" };
 
@@ -55,7 +42,6 @@ function AdminOrdersContent() {
         </View>
       }
       renderItem={({ item }) => {
-        const statusStyle = STATUS_STYLES[item.status] ?? { bg: "#f3f4f6", text: "#374151" };
         return (
           <Link href={`/orders/${item.id}`} asChild>
             <Pressable className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -72,10 +58,8 @@ function AdminOrdersContent() {
                   ${(item.total_charged ?? item.price).toFixed(2)} · Qty {item.quantity}
                 </Text>
               </View>
-              <View className="rounded-full px-2 py-1 shrink-0" style={{ backgroundColor: statusStyle.bg }}>
-                <Text className="text-[10px] font-semibold capitalize" style={{ color: statusStyle.text }}>
-                  {item.status.replace("_", " ")}
-                </Text>
+              <View className="shrink-0">
+                <OrderStatusBadge status={item.status} />
               </View>
               {item.doa_claim_status === "pending" && (
                 <View className="rounded-full px-2 py-1 shrink-0" style={{ backgroundColor: CLAIM_PENDING_STYLE.bg }}>
@@ -99,7 +83,7 @@ export default function AdminOrdersScreen() {
       <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-          <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+          <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
             <ArrowLeft size={20} color={themeColors.foreground} />
           </Pressable>
           <Text className="text-base font-semibold text-foreground">Orders</Text>

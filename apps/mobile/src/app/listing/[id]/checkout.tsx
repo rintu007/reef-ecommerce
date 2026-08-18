@@ -9,6 +9,7 @@ import { apiClient } from "@/lib/api-client";
 import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 import { useCheckoutStripe } from "@/lib/stripe-checkout";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 const stripeConfigured = !!process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
@@ -116,14 +117,14 @@ export default function CheckoutScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+        <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Checkout</Text>
       </View>
 
       {!agreed && (
-        <BuyerAgreementModal onAgree={() => setAgreed(true)} onClose={() => router.back()} />
+        <BuyerAgreementModal onAgree={() => setAgreed(true)} onClose={() => safeGoBack(router)} />
       )}
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>

@@ -8,6 +8,7 @@ import { ServiceForm } from "@/components/ServiceForm";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 export default function EditServiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,7 +42,7 @@ export default function EditServiceScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+        <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Edit Service</Text>

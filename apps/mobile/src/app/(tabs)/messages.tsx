@@ -1,6 +1,7 @@
 import { listConversations, type ConversationSummary } from "@reef-market/shared";
 import { Image } from "expo-image";
-import { Link, useFocusEffect } from "expo-router";
+import { Link, useFocusEffect, useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +22,7 @@ function timeAgo(iso: string | null): string {
 }
 
 export default function MessagesScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,8 +65,19 @@ export default function MessagesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 8 }}
           ListEmptyComponent={
-            <View className="items-center py-24 px-6">
+            <View className="items-center py-24 px-6 gap-3">
+              <MessageCircle size={28} color={themeColors.mutedForeground} />
               <Text className="text-muted-foreground text-center">No conversations yet.</Text>
+              <Text className="text-sm text-muted-foreground text-center">
+                Message a seller from a listing or their storefront to start a conversation.
+              </Text>
+              <Pressable
+                testID="messages-browse-cta"
+                onPress={() => router.push("/(tabs)/browse")}
+                className="mt-1 rounded-xl bg-primary px-4 py-2.5"
+              >
+                <Text className="text-sm font-semibold text-white">Browse Listings</Text>
+              </Pressable>
             </View>
           }
           renderItem={({ item }) => (

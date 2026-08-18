@@ -2,11 +2,12 @@ import { HELP_CATEGORIES, listListings, type Listing } from "@reef-market/shared
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { BookOpen, ChevronRight, ShoppingBag, Star, Waves } from "lucide-react-native";
+import { BookOpen, ChevronRight, ShoppingBag, ShoppingCart, Star, Waves } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
+import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 
 const PLACEHOLDER_PHOTO = "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=400&q=80";
@@ -233,6 +234,8 @@ function LearnTabContent() {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { count: cartCount } = useCart();
   const [activeTab, setActiveTab] = useState<HomeTab>("browse");
 
   const tabs: { id: HomeTab; label: string; icon: typeof Waves }[] = [
@@ -246,6 +249,18 @@ export default function HomeScreen() {
       <LinearGradient colors={[themeColors.primary, "#0a4a6b"]} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="px-5 pt-6 pb-4 items-center">
+            <Pressable
+              testID="home-cart-button"
+              onPress={() => router.push("/cart")}
+              className="absolute top-4 right-5 w-10 h-10 rounded-xl bg-white/15 items-center justify-center"
+            >
+              <ShoppingCart size={18} color={themeColors.white} />
+              {cartCount > 0 && (
+                <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent items-center justify-center px-1">
+                  <Text className="text-[9px] font-bold text-white">{cartCount}</Text>
+                </View>
+              )}
+            </Pressable>
             <View className="flex-row items-center gap-2 mb-1">
               <Text style={{ fontSize: 22 }}>🪸</Text>
               <Text className="text-3xl font-extrabold text-white tracking-tight">Reef Market</Text>

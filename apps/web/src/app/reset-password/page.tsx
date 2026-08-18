@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -13,16 +14,32 @@ export default function ResetPasswordPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // The reset-password link establishes a temporary recovery session via
-    // the URL hash on load (createBrowserClient has detectSessionInUrl on) —
-    // wait for it before showing the form, otherwise updateUser() below has
-    // nothing to act on.
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
+
+    (async () => {
+      // Our own link (see api/auth/forgot-password) carries `token_hash` as
+      // a query param and is exchanged for a session explicitly — this
+      // doesn't touch the Auth "Site URL"/redirect-URL config at all, unlike
+      // Supabase's own hash-fragment redirect flow below.
+      if (tokenHash && type === "recovery") {
+        const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+        if (verifyError) {
+          setError("This reset link is invalid or has expired. Request a new one.");
+          return;
+        }
+        setReady(true);
+        return;
+      }
+
+      // Fallback: a legacy link that established a session via URL hash
+      // (detectSessionInUrl) before this page even mounted.
+      const { data } = await supabase.auth.getSession();
       setReady(!!data.session);
       if (!data.session) setError("This reset link is invalid or has expired. Request a new one.");
-    });
-  }, []);
+    })();
+  }, [searchParams]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -85,5 +102,18 @@ export default function ResetPasswordPage() {
         error && <p className="text-sm text-red-600">{error}</p>
       )}
     </div>
+  );
+}
+
+/**
+ * useSearchParams() opts this page into client-side rendering during static
+ * generation, which App Router requires to be behind a Suspense boundary
+ * (see apps/web/src/app/auth/callback/page.tsx for the same pattern).
+ */
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="max-w-sm mx-auto p-6 mt-12 text-center text-sm text-gray-500">Loading…</div>}>
+      <ResetPasswordInner />
+    </Suspense>
   );
 }

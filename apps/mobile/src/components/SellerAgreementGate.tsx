@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { SellerAgreementModal } from "./SellerAgreementModal";
 import { PayoutSetupPrompt } from "./PayoutSetupPrompt";
+import { safeGoBack } from "@/lib/navigation";
 
 const SELLER_AGREEMENT_KEY = "reef_seller_agreed_v1";
 
@@ -63,7 +64,7 @@ export function SellerAgreementGate({ children }: { children: ReactNode }) {
   if (checking) return null;
 
   if (!agreed) {
-    return <SellerAgreementModal onAgree={handleAgree} onClose={() => router.back()} />;
+    return <SellerAgreementModal onAgree={handleAgree} onClose={() => safeGoBack(router)} />;
   }
 
   if (showPayoutPrompt) {

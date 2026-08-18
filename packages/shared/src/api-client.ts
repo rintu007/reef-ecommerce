@@ -125,9 +125,17 @@ function safeJsonParse(text: string): unknown {
   }
 }
 
+// ============================================================== auth
+
+export function forgotPassword(client: ApiClient, email: string) {
+  return client.post<{ ok: true }>("/api/auth/forgot-password", { email });
+}
+
 // ============================================================== listings
 
 export interface ListingBrowseParams {
+  /** Exact-ID batch lookup (e.g. cart rehydration) — one round trip instead of N. */
+  ids?: string[];
   market?: "saltwater" | "freshwater" | "both";
   listing_type?: string;
   category?: string;
@@ -292,6 +300,17 @@ export function acceptEula(client: ApiClient) {
 
 export function getPublicProfile(client: ApiClient, id: string) {
   return client.get<{ profile: PublicProfile }>(`/api/profiles/${id}`);
+}
+
+export interface SellerStorefront {
+  profile: PublicProfile;
+  listings: Listing[];
+  reviews: SellerReviewSummary;
+}
+
+/** profile + listings + reviews in one round trip — see api/sellers/[id]/storefront/route.ts. */
+export function getSellerStorefront(client: ApiClient, sellerId: string) {
+  return client.get<SellerStorefront>(`/api/sellers/${sellerId}/storefront`);
 }
 
 // ============================================================== admin

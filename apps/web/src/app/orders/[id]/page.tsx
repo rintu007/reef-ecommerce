@@ -1,10 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ORDER_STATUS_META } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getOrderById } from "@/lib/server/orders";
 import { hasReviewed } from "@/lib/server/reviews";
 import { OrderActions } from "./OrderActions";
 import { ReviewForm } from "./ReviewForm";
+import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -46,9 +48,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
 
-        <dl className="grid grid-cols-2 gap-y-1 text-sm">
+        <dl className="grid grid-cols-2 gap-y-1 text-sm items-center">
           <dt className="text-gray-500">Status</dt>
-          <dd className="font-semibold">{order.status.replace("_", " ")}</dd>
+          <dd>
+            <OrderStatusBadge status={order.status} />
+          </dd>
+          <dd className="text-gray-500 col-span-2 -mt-0.5 mb-1 text-xs">{ORDER_STATUS_META[order.status].description}</dd>
           <dt className="text-gray-500">Total charged</dt>
           <dd>${order.total_charged?.toFixed(2) ?? "—"}</dd>
           <dt className="text-gray-500">Delivery</dt>

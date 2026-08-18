@@ -1,0 +1,12 @@
+{
+  "installCommand": "pnpm install --frozen-lockfile=false",
+  "buildCommand": "pnpm --filter @reef-market/web build",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/release-pending-pickups",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

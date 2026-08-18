@@ -1,7 +1,5 @@
 import {
-  getPublicProfile,
-  getSellerReviews,
-  listListings,
+  getSellerStorefront,
   LISTING_TYPE_ICONS,
   LISTING_TYPE_LABELS,
   type Listing,
@@ -18,6 +16,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 export default function SellerStorefrontScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,16 +35,16 @@ export default function SellerStorefrontScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      getPublicProfile(apiClient, id),
-      listListings(apiClient, { seller_id: id, status: "active", sort: "newest", limit: 48 }),
-      getSellerReviews(apiClient, id),
-    ])
-      .then(([profileRes, listingsRes, reviewsRes]) => {
+    // One round trip instead of three (profile + listings + reviews used to
+    // be separate requests) — each was its own serverless function, so each
+    // was its own independent cold-start risk, which is what made this
+    // screen intermittently slow to open.
+    getSellerStorefront(apiClient, id)
+      .then((storefront) => {
         if (cancelled) return;
-        setProfile(profileRes.profile);
-        setListings(listingsRes.listings);
-        setReviews(reviewsRes);
+        setProfile(storefront.profile);
+        setListings(storefront.listings);
+        setReviews(storefront.reviews);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -103,7 +102,7 @@ export default function SellerStorefrontScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+        <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="text-base font-semibold text-foreground flex-1">Store</Text>

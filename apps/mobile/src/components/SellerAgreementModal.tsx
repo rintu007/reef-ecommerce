@@ -43,7 +43,7 @@ export function SellerAgreementModal({ onAgree, onClose }: { onAgree: () => void
               fee apply to the full amount the buyer pays (item price + any shipping you charge). Example with a $100
               item and $15 shipping:
             </Text>
-            <View className="bg-white rounded-lg p-3 border border-amber-200">
+            <View className="bg-card rounded-lg p-3 border border-amber-200">
               <FeeRow label="Buyer pays (item + shipping + tax)" value="~$123.30" />
               <FeeRow label="Your item price" value="$100.00" />
               <FeeRow label="Your shipping charge" value="$15.00" />

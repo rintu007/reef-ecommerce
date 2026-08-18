@@ -8,6 +8,7 @@ import { AdminGate } from "@/components/AdminGate";
 import { notify } from "@/lib/alert";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 // Mirrors apps/web/src/app/admin/reports/AdminReportsTable.tsx's STATUS_TABS exactly.
 const STATUS_TABS: { value: ReportStatus | "all"; label: string }[] = [
@@ -148,7 +149,7 @@ export default function AdminReportsScreen() {
       <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-          <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+          <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
             <ArrowLeft size={20} color={themeColors.foreground} />
           </Pressable>
           <Text className="text-base font-semibold text-foreground">Reports</Text>

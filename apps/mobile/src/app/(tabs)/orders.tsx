@@ -8,18 +8,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 import { AuthGate } from "@/components/AuthGate";
-
-const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  pending: { bg: "#f3f4f6", text: "#374151" },
-  confirmed: { bg: "#dbeafe", text: "#1e40af" },
-  shipped: { bg: "#e0e7ff", text: "#3730a3" },
-  delivered: { bg: "#e0e7ff", text: "#3730a3" },
-  awaiting_pickup: { bg: "#fef9c3", text: "#854d0e" },
-  completed: { bg: "#d1fae5", text: "#065f46" },
-  cancelled: { bg: "#e5e7eb", text: "#374151" },
-  doa_claim: { bg: "#fee2e2", text: "#991b1b" },
-  pickup_confirmed: { bg: "#d1fae5", text: "#065f46" },
-};
+import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 export default function OrdersScreen() {
   const { session } = useAuth();
@@ -86,7 +75,6 @@ export default function OrdersScreen() {
             </View>
           }
           renderItem={({ item }) => {
-            const statusStyle = STATUS_STYLES[item.status] ?? { bg: "#f3f4f6", text: "#374151" };
             return (
               <Link href={`/orders/${item.id}`} asChild>
                 <Pressable className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -101,10 +89,8 @@ export default function OrdersScreen() {
                       Qty {item.quantity} · ${(item.total_charged ?? item.price).toFixed(2)}
                     </Text>
                   </View>
-                  <View className="rounded-full px-2 py-1 shrink-0" style={{ backgroundColor: statusStyle.bg }}>
-                    <Text className="text-[10px] font-semibold capitalize" style={{ color: statusStyle.text }}>
-                      {item.status.replace("_", " ")}
-                    </Text>
+                  <View className="shrink-0">
+                    <OrderStatusBadge status={item.status} />
                   </View>
                 </Pressable>
               </Link>

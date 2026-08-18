@@ -77,7 +77,7 @@ export function EULAGate() {
   return (
     <Modal visible animationType="fade" transparent statusBarTranslucent>
       <View className="flex-1 bg-black/70 items-center justify-center p-4">
-        <View className="bg-white w-full max-w-md rounded-2xl p-4 gap-3" style={{ maxHeight: "85%" }}>
+        <View className="bg-card w-full max-w-md rounded-2xl p-4 gap-3" style={{ maxHeight: "85%" }}>
           <View className="items-center">
             <Text className="text-2xl">🪸</Text>
             <Text className="text-lg font-bold mt-1 text-foreground text-center">Welcome to Reef Market</Text>
@@ -86,51 +86,51 @@ export function EULAGate() {
             </Text>
           </View>
 
-          <ScrollView className="bg-gray-50 rounded-xl p-3" style={{ maxHeight: 320 }}>
-            <Text className="font-semibold text-gray-800 text-sm mb-2">Community Standards & Terms of Use</Text>
+          <ScrollView className="bg-muted rounded-xl p-3" style={{ maxHeight: 320 }}>
+            <Text className="font-semibold text-foreground text-sm mb-2">Community Standards & Terms of Use</Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Zero Tolerance for Objectionable Content.</Text> Reef Market has a strict
               zero-tolerance policy for objectionable content of any kind. This includes but is not limited to: hate
               speech, harassment, abusive behavior, illegal content, scams, fraud, or any content that violates
               applicable laws or community standards.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">User Responsibilities.</Text> By using Reef Market, you agree to only post
               accurate, honest listings for aquarium animals and equipment. You agree not to harass, threaten, or
               abuse other users in any way.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Content Moderation.</Text> All listings and messages are subject to
               review. Reef Market reserves the right to remove any content and suspend or permanently ban any user
               at any time, without notice, for violating these terms.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Reporting.</Text> Users are encouraged to report objectionable content or
               abusive users using the in-app reporting tools. Reports are reviewed within 24 hours and appropriate
               action will be taken, including content removal and user ejection.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Blocking.</Text> You may block any user at any time. Blocked users will
               not appear in your feed. Reef Market will be notified of all block actions for review.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Transactions.</Text> All sales are between buyers and sellers. Reef
               Market facilitates payments but is not responsible for the condition of items or live animal survival.
               Review each seller&apos;s DOA policy carefully.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed mb-2">
+            <Text className="text-xs text-muted-foreground leading-relaxed mb-2">
               <Text className="font-bold">Privacy.</Text> Your information is used only to facilitate transactions
               and improve the platform. We do not sell your data to third parties.
             </Text>
 
-            <Text className="text-xs text-gray-600 leading-relaxed">
+            <Text className="text-xs text-muted-foreground leading-relaxed">
               By tapping &quot;I Agree&quot;, you confirm you have read and agree to these terms and our Community
               Standards. Violations may result in immediate removal from the platform.
             </Text>
@@ -146,7 +146,7 @@ export function EULAGate() {
             >
               {checked && <Check size={14} color={themeColors.white} />}
             </View>
-            <Text className="text-sm text-gray-700 flex-1">
+            <Text className="text-sm text-foreground flex-1">
               I have read and agree to the Community Standards and Terms of Use. I understand there is zero
               tolerance for objectionable content or abusive behavior.
             </Text>

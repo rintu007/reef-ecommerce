@@ -1,4 +1,4 @@
-import { checkoutCart, computeCheckoutBreakdown, fromCents, getListing, type CartCheckoutItemResult, type Listing } from "@reef-market/shared";
+import { checkoutCart, computeCheckoutBreakdown, fromCents, listListings, type CartCheckoutItemResult, type Listing } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -10,6 +10,7 @@ import { BuyerAgreementModal } from "@/components/BuyerAgreementModal";
 import { useCart } from "@/lib/cart-context";
 import { useCheckoutStripe } from "@/lib/stripe-checkout";
 import { themeColors } from "@/lib/theme-colors";
+import { safeGoBack } from "@/lib/navigation";
 
 const stripeConfigured = !!process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
@@ -28,20 +29,39 @@ export default function CartScreen() {
   // matching legacy's BuyerAgreementModal/CheckoutModal behavior exactly.
   const [showAgreement, setShowAgreement] = useState(false);
 
+  // Stable, deduped key of the listing IDs actually in the cart — refetch
+  // only when the *set* of items changes, not on every quantity/shipping
+  // tweak (those don't need a new listings lookup, but `items` gets a new
+  // array reference on every cart-context update).
+  const listingIdsKey = useMemo(() => Array.from(new Set(items.map((i) => i.listingId))).sort().join(","), [items]);
+
   useEffect(() => {
-    if (items.length === 0) {
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
+    let cancelled = false;
+    async function load() {
+      if (!listingIdsKey) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        // One batched request instead of one HTTP round trip per cart item —
+        // that N+1 pattern was the main source of "cart takes forever to load".
+        const { listings } = await listListings(apiClient, { ids: listingIdsKey.split(",") });
+        if (cancelled) return;
+        const map: Record<string, Listing> = {};
+        listings.forEach((listing) => {
+          map[listing.id] = listing;
+        });
+        setListings(map);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    Promise.all(items.map((item) => getListing(apiClient, item.listingId).then((r) => r.listing).catch(() => null))).then((results) => {
-      const map: Record<string, Listing> = {};
-      results.forEach((listing) => {
-        if (listing) map[listing.id] = listing;
-      });
-      setListings(map);
-      setLoading(false);
-    });
-  }, [items]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [listingIdsKey]);
 
   const grouped = useMemo(() => {
     const bySeller: Record<string, typeof items> = {};
@@ -141,7 +161,7 @@ export default function CartScreen() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center -ml-2">
+        <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">
           <ArrowLeft size={20} color={themeColors.foreground} />
         </Pressable>
         <Text className="text-base font-semibold text-foreground">Your Cart</Text>

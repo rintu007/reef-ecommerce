@@ -105,13 +105,24 @@ export async function createCheckoutIntent(
     throw orderError;
   }
 
-  const paymentIntent = await stripe().paymentIntents.create({
-    amount: breakdown.totalChargedCents,
-    currency: listing.currency.toLowerCase(),
-    application_fee_amount: breakdown.platformFeeCents + breakdown.featuredFeeCents,
-    transfer_data: { destination: payoutAccount.stripe_account_id },
-    metadata: { order_id: order.id, listing_id: listing.id, buyer_id: buyerId, seller_id: listing.seller_id },
-  });
+  let paymentIntent;
+  try {
+    paymentIntent = await stripe().paymentIntents.create({
+      amount: breakdown.totalChargedCents,
+      currency: listing.currency.toLowerCase(),
+      application_fee_amount: breakdown.platformFeeCents + breakdown.featuredFeeCents,
+      transfer_data: { destination: payoutAccount.stripe_account_id },
+      metadata: { order_id: order.id, listing_id: listing.id, buyer_id: buyerId, seller_id: listing.seller_id },
+    });
+  } catch (stripeError) {
+    // The order row above is already committed — if PaymentIntent creation
+    // fails (e.g. seller's Connect account not fully verified yet), don't
+    // leave it stuck in "pending" forever with no payment_intent_id for a
+    // webhook to ever resolve. Delete it outright rather than "cancelled",
+    // since a buyer never even saw a payment screen for it.
+    await db.from("orders").delete().eq("id", order.id);
+    throw stripeError;
+  }
 
   const { data: updated, error: updateError } = await db
     .from("orders")
@@ -397,8 +408,9 @@ export async function releaseStalePendingPickups(hoursThreshold = 72): Promise<n
  * Admin-only. `refund` calls Stripe for real (product decision for this
  * rebuild — the legacy `processRefundOrCredit` only flipped status, per a
  * literal TODO in its source; SYSTEM_ANALYSIS.md SS5 flagged that as a gap,
- * not a feature to preserve). Reuses order_status's existing `doa_claim`
- * value to record the outcome rather than adding a new enum value.
+ * not a feature to preserve). Sets the dedicated `refunded` status — this
+ * used to reuse `doa_claim`, which made a completed refund indistinguishable
+ * from an still-open dispute in every order status display in the app.
  */
 export async function refundOrder(orderId: string, adminId: string, mode: "refund" | "store_credit"): Promise<Order> {
   const db = supabaseAdmin();
@@ -427,7 +439,7 @@ export async function refundOrder(orderId: string, adminId: string, mode: "refun
 
   const { data: updated, error: updateError } = await db
     .from("orders")
-    .update({ status: "doa_claim", ...(order.doa_claim_status === "pending" ? { doa_claim_status: "approved" } : {}) })
+    .update({ status: "refunded", ...(order.doa_claim_status === "pending" ? { doa_claim_status: "approved" } : {}) })
     .eq("id", orderId)
     .select()
     .single();

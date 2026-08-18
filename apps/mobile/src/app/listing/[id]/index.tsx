@@ -9,6 +9,7 @@ import {
 } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { safeGoBack } from "@/lib/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -119,6 +120,13 @@ export default function ListingDetailScreen() {
         const { listing } = await getListing(apiClient, id);
         if (cancelled) return;
         setListing(listing);
+        // Render the listing itself as soon as it's ready — the JSX below
+        // already handles `seller`/`reviews` being null (optional chaining,
+        // fallback text), so there's no reason to hold the whole screen
+        // behind a spinner for two more round trips the user doesn't need
+        // to see the price/photos/description. This was the single biggest
+        // perceived-load-time win on the most-visited screen in the app.
+        setLoading(false);
         const [sellerRes, reviewsRes] = await Promise.all([
           getPublicProfile(apiClient, listing.seller_id),
           getSellerReviews(apiClient, listing.seller_id),
@@ -126,7 +134,7 @@ export default function ListingDetailScreen() {
         if (cancelled) return;
         setSeller(sellerRes.profile);
         setReviews(reviewsRes);
-      } finally {
+      } catch {
         if (!cancelled) setLoading(false);
       }
     }
@@ -166,7 +174,7 @@ export default function ListingDetailScreen() {
 
           <SafeAreaView edges={["top"]} style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
             <View className="flex-row justify-between px-4 pt-2">
-              <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-black/40 items-center justify-center">
+              <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 rounded-full bg-black/40 items-center justify-center">
                 <ArrowLeft size={18} color={themeColors.white} />
               </Pressable>
               {session && (

@@ -2,18 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { listAllOrders } from "@/lib/server/orders";
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-700",
-  confirmed: "bg-blue-100 text-blue-800",
-  shipped: "bg-indigo-100 text-indigo-800",
-  delivered: "bg-indigo-100 text-indigo-800",
-  awaiting_pickup: "bg-yellow-100 text-yellow-800",
-  completed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-gray-200 text-gray-600",
-  doa_claim: "bg-red-100 text-red-800",
-  pickup_confirmed: "bg-emerald-100 text-emerald-800",
-};
+import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 
 export default async function AdminOrdersPage() {
   const user = await getAuthenticatedUser();
@@ -48,11 +37,7 @@ export default async function AdminOrdersPage() {
                   ${order.total_charged?.toFixed(2) ?? order.price.toFixed(2)} · Qty {order.quantity}
                 </p>
               </div>
-              <span
-                className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-700"}`}
-              >
-                {order.status.replace("_", " ")}
-              </span>
+              <OrderStatusBadge status={order.status} />
               {order.doa_claim_status === "pending" && (
                 <span className="text-xs font-semibold px-2 py-1 rounded-full shrink-0 bg-amber-100 text-amber-800">claim pending</span>
               )}
