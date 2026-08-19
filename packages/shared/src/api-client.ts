@@ -52,7 +52,7 @@ import type {
   VisitorLog,
 } from "./types/entities";
 import type { DoaClaimReviewStatus, PlanSlug, ReportStatus, UserRole } from "./types/enums";
-import type { AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
+import type { AdminActionLogEntry, AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
 
 export class ApiError extends Error {
   status: number;
@@ -327,6 +327,13 @@ export function getAdminAnalytics(client: ApiClient) {
 
 export function listSellerPayoutAccounts(client: ApiClient) {
   return client.get<{ accounts: SellerPayoutStatus[] }>("/api/admin/seller-payouts");
+}
+
+export function listAdminActionLog(
+  client: ApiClient,
+  params: { admin_id?: string; target_type?: string; limit?: number; offset?: number } = {}
+) {
+  return client.get<{ entries: AdminActionLogEntry[]; total: number }>(`/api/admin/action-log${toQueryString(params)}`);
 }
 
 export function listAdminOrders(client: ApiClient, params: { limit?: number } = {}) {

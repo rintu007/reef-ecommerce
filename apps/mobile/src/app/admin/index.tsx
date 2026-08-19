@@ -26,6 +26,7 @@ const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => stri
   { href: "/admin/sales-analytics", title: "Sales Analytics", describe: () => "Revenue, order status, and recent activity" },
   { href: "/admin/app-analytics", title: "App Analytics", describe: () => "Users, listings, reviews, and visitor stats" },
   { href: "/admin/visitor-logs", title: "Visitor Logs", describe: () => "Raw page-view events by session or user" },
+  { href: "/admin/action-log", title: "Action Log", describe: () => "Every sensitive admin action, who and when" },
 ];
 
 function StatCard({ label, value }: { label: string; value: number }) {

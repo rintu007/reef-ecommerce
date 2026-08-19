@@ -1,3 +1,15 @@
+export interface AdminActionLogEntry {
+  id: string;
+  admin_id: string;
+  admin_email: string | null;
+  admin_display_name: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface SellerPayoutStatus {
   user_id: string;
   user_email: string | null;
