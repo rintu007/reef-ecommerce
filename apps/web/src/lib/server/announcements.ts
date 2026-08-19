@@ -1,5 +1,7 @@
 import type { Announcement, AnnouncementCreateInput, AnnouncementUpdateInput } from "@reef-market/shared";
 import type { AuthUser } from "./auth";
+import { sendAnnouncementBroadcast } from "./email";
+import { AppError } from "./http";
 import { supabaseAdmin } from "./supabase-admin";
 
 /** Most recent active announcement visible to this viewer, or null. No per-user view-cap tracking table exists — max_views is enforced client-side via local storage. */
@@ -46,4 +48,29 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   const db = supabaseAdmin();
   const { error } = await db.from("announcements").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Legacy parity: broadcasting the announcement by email, not just the in-app popup. One-shot — repeat calls after the first success are rejected so a re-click can't double-email everyone. */
+export async function sendAnnouncementEmail(id: string): Promise<{ sent: number; failed: number }> {
+  const db = supabaseAdmin();
+
+  const { data: announcement, error: fetchError } = await db
+    .from("announcements")
+    .select("subject, message, emailed_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!announcement) throw new AppError("Announcement not found", 404);
+  if (announcement.emailed_at) throw new AppError("This announcement has already been emailed", 400);
+
+  const { data: profiles, error: profilesError } = await db.from("profiles").select("email").not("email", "is", null);
+  if (profilesError) throw profilesError;
+  const recipients = (profiles ?? []).map((p) => p.email).filter((e): e is string => !!e);
+
+  const result = await sendAnnouncementBroadcast(recipients, announcement.subject, announcement.message);
+
+  const { error: updateError } = await db.from("announcements").update({ emailed_at: new Date().toISOString() }).eq("id", id);
+  if (updateError) throw updateError;
+
+  return result;
 }

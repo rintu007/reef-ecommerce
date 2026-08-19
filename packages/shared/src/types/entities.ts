@@ -466,12 +466,13 @@ export const announcementSchema = z.object({
   is_active: z.boolean(),
   max_views: z.number().int().nonnegative(),
   show_to_guests: z.boolean(),
+  emailed_at: isoDateTime().nullable(),
   created_at: isoDateTime(),
   updated_at: isoDateTime(),
 });
 export type Announcement = z.infer<typeof announcementSchema>;
 export const announcementCreateSchema = announcementSchema
-  .omit({ id: true, created_at: true, updated_at: true })
+  .omit({ id: true, created_at: true, updated_at: true, emailed_at: true })
   .partial({ is_active: true, max_views: true, show_to_guests: true });
 export type AnnouncementCreateInput = z.infer<typeof announcementCreateSchema>;
 export const announcementUpdateSchema = announcementCreateSchema.partial();

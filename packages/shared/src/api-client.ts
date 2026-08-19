@@ -365,6 +365,10 @@ export function deleteAnnouncement(client: ApiClient, id: string) {
   return client.delete<{ deleted: true }>(`/api/admin/announcements/${id}`);
 }
 
+export function sendAnnouncementEmail(client: ApiClient, id: string) {
+  return client.post<{ sent: number; failed: number }>(`/api/admin/announcements/${id}/send-email`, {});
+}
+
 export function listAdminHelpContent(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
   return client.get<{ items: HelpContent[]; total: number }>(`/api/admin/help-content${toQueryString(params)}`);
 }
