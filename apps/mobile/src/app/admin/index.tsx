@@ -18,6 +18,7 @@ const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => stri
   { href: "/admin/reports", title: "Reports", describe: (s) => `${s.reports.pending} pending triage` },
   { href: "/admin/users", title: "Users", describe: (s) => `${s.users.total} registered` },
   { href: "/admin/orders", title: "Orders", describe: (s) => `${s.orders.total} total · ${s.orders.doa_claim} refund/credit` },
+  { href: "/admin/doa-claims", title: "DOA Claims", describe: () => "Dead-on-arrival claims queue" },
   { href: "/admin/announcements", title: "Announcements", describe: () => "Broadcast banner shown on app load" },
   { href: "/admin/help-content", title: "Learn Content", describe: () => "Care guides shown on the Learn tab" },
   { href: "/admin/promo-codes", title: "Promo Codes", describe: () => "Bonus listings & free membership grants" },

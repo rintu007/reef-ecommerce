@@ -38,6 +38,7 @@ export default async function AdminOverviewPage() {
           title="Orders"
           description={`${stats.orders.total} total · ${stats.orders.doa_claim} refund/credit`}
         />
+        <AdminNavCard href="/admin/doa-claims" title="DOA Claims" description="Dead-on-arrival claims queue" />
         <AdminNavCard href="/admin/announcements" title="Announcements" description="Broadcast banner shown on app load" />
         <AdminNavCard href="/admin/help-content" title="Learn Content" description="Care guides shown on the mobile Learn tab" />
         <AdminNavCard href="/admin/promo-codes" title="Promo Codes" description="Bonus listings & free membership grants" />

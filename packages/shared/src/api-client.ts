@@ -51,7 +51,7 @@ import type {
   UserSubscription,
   VisitorLog,
 } from "./types/entities";
-import type { PlanSlug, ReportStatus, UserRole } from "./types/enums";
+import type { DoaClaimReviewStatus, PlanSlug, ReportStatus, UserRole } from "./types/enums";
 import type { AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
 
 export class ApiError extends Error {
@@ -331,6 +331,15 @@ export function listSellerPayoutAccounts(client: ApiClient) {
 
 export function listAdminOrders(client: ApiClient, params: { limit?: number } = {}) {
   return client.get<{ orders: Order[] }>(`/api/admin/orders${toQueryString(params)}`);
+}
+
+export interface AdminDoaClaim extends Order {
+  buyer: { id: string; display_name: string | null; email: string } | null;
+  seller: { id: string; display_name: string | null; email: string } | null;
+}
+
+export function listDoaClaims(client: ApiClient, params: { status?: DoaClaimReviewStatus; limit?: number; offset?: number } = {}) {
+  return client.get<{ claims: AdminDoaClaim[]; total: number }>(`/api/admin/doa-claims${toQueryString(params)}`);
 }
 
 export function listAdminUsers(client: ApiClient, params: { q?: string; limit?: number; offset?: number } = {}) {
