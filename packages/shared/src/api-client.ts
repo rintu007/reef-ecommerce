@@ -49,6 +49,7 @@ import type {
   ServiceUpdateInput,
   ShipOrderInput,
   UserSubscription,
+  VisitorLog,
 } from "./types/entities";
 import type { PlanSlug, ReportStatus, UserRole } from "./types/enums";
 import type { AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
@@ -352,6 +353,18 @@ export function listAdminReports(client: ApiClient, params: { status?: ReportSta
 
 export function updateReportStatus(client: ApiClient, id: string, status: ReportStatus) {
   return client.patch<{ report: Report }>(`/api/admin/reports/${id}`, { status });
+}
+
+export interface VisitorLogListParams {
+  session_id?: string;
+  user_email?: string;
+  guests_only?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export function listAdminVisitorLogs(client: ApiClient, params: VisitorLogListParams = {}) {
+  return client.get<{ logs: VisitorLog[]; total: number }>(`/api/admin/visitor-logs${toQueryString(params)}`);
 }
 
 export function listAdminAnnouncements(client: ApiClient, params: { limit?: number; offset?: number } = {}) {

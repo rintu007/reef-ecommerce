@@ -44,6 +44,7 @@ export default async function AdminOverviewPage() {
         <AdminNavCard href="/admin/seller-payouts" title="Seller Payouts" description="Stripe Connect onboarding & payout status" />
         <AdminNavCard href="/admin/sales-analytics" title="Sales Analytics" description="Revenue, order status, and recent activity" />
         <AdminNavCard href="/admin/app-analytics" title="App Analytics" description="Users, listings, reviews, and visitor stats" />
+        <AdminNavCard href="/admin/visitor-logs" title="Visitor Logs" description="Raw page-view events by session or user" />
         <AdminNavCard href="/api-docs" title="API Docs & Tester" description="Every backend endpoint, with example payloads you can edit and send" />
       </div>
 

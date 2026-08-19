@@ -363,6 +363,16 @@ export const reportSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type Report = z.infer<typeof reportSchema>;
+
+export const visitorLogSchema = z.object({
+  id: uuid(),
+  path: z.string(),
+  session_id: z.string(),
+  user_email: z.string().nullable(),
+  is_guest: z.boolean(),
+  created_at: isoDateTime(),
+});
+export type VisitorLog = z.infer<typeof visitorLogSchema>;
 export const reportCreateSchema = reportSchema
   .omit({ id: true, reporter_id: true, status: true, created_at: true, updated_at: true })
   .partial({ listing_id: true, reported_id: true, details: true });

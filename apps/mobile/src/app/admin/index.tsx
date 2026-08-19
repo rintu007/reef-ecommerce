@@ -24,6 +24,7 @@ const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => stri
   { href: "/admin/seller-payouts", title: "Seller Payouts", describe: () => "Stripe Connect onboarding & payout status" },
   { href: "/admin/sales-analytics", title: "Sales Analytics", describe: () => "Revenue, order status, and recent activity" },
   { href: "/admin/app-analytics", title: "App Analytics", describe: () => "Users, listings, reviews, and visitor stats" },
+  { href: "/admin/visitor-logs", title: "Visitor Logs", describe: () => "Raw page-view events by session or user" },
 ];
 
 function StatCard({ label, value }: { label: string; value: number }) {

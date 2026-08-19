@@ -1,4 +1,4 @@
-import type { AdminAnalytics, AdminStats, Profile, Report, ReportStatus, UserRole } from "@reef-market/shared";
+import type { AdminAnalytics, AdminStats, Profile, Report, ReportStatus, UserRole, VisitorLog } from "@reef-market/shared";
 import { supabaseAdmin } from "./supabase-admin";
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -220,4 +220,33 @@ export async function updateReportStatus(id: string, status: ReportStatus): Prom
   const { data, error } = await db.from("reports").update({ status }).eq("id", id).select().single();
   if (error) throw error;
   return data as Report;
+}
+
+export interface VisitorLogListParams {
+  sessionId?: string;
+  userEmail?: string;
+  guestsOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+/** Raw session-level rows — App Analytics only ever shows aggregates (totals, top pages, visits-by-day), with no way to inspect what one specific session or user actually did. */
+export async function listAdminVisitorLogs(params: VisitorLogListParams): Promise<{ logs: VisitorLog[]; total: number }> {
+  const db = supabaseAdmin();
+  let query = db.from("visitor_logs").select("*", { count: "exact" });
+
+  if (params.sessionId) query = query.eq("session_id", params.sessionId);
+  if (params.userEmail) {
+    const term = params.userEmail.replace(/[%_]/g, "\\$&");
+    query = query.ilike("user_email", `%${term}%`);
+  }
+  if (params.guestsOnly) query = query.eq("is_guest", true);
+
+  const limit = Math.min(params.limit ?? 100, 500);
+  const offset = Math.max(params.offset ?? 0, 0);
+  query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { logs: (data ?? []) as VisitorLog[], total: count ?? data?.length ?? 0 };
 }
