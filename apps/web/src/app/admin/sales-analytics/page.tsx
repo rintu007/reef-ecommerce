@@ -24,11 +24,15 @@ export default async function SalesAnalyticsPage() {
       <h1 className="text-2xl font-bold mb-6">Sales Analytics</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Revenue" value={`$${analytics.orders.revenue.total.toFixed(2)}`} />
+        <StatCard label="Total Revenue (GMV)" value={`$${analytics.orders.revenue.total.toFixed(2)}`} />
+        <StatCard label="Platform Earnings" value={`$${analytics.orders.revenue.platformFee.toFixed(2)}`} />
         <StatCard label="Total Orders" value={String(analytics.orders.total)} />
         <StatCard label="Completed" value={String(analytics.orders.completed)} />
         <StatCard label="Avg Order" value={`$${analytics.orders.revenue.avg.toFixed(2)}`} />
       </div>
+      <p className="text-xs text-gray-400 -mt-6 mb-8">
+        Total Revenue is gross order value (what buyers paid). Platform Earnings is your actual 5% + featured-listing fee take on completed orders.
+      </p>
 
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         <div className="rounded-xl border border-gray-200 p-4 bg-white">

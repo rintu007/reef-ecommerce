@@ -89,6 +89,7 @@ export async function createCheckoutIntent(
       listing_photo: listing.photos[0] ?? null,
       price: listing.price,
       total_charged: fromCents(breakdown.totalChargedCents),
+      platform_fee: fromCents(breakdown.platformFeeCents + breakdown.featuredFeeCents),
       quantity: input.quantity,
       shipping_method: input.shipping_method,
       status: "pending",

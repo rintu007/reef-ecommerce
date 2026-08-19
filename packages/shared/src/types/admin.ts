@@ -11,7 +11,13 @@ export interface AdminAnalytics {
     total: number;
     completed: number;
     pending: number;
-    revenue: { total: number; avg: number; byStatus: { completed: number; pending: number; cancelled: number } };
+    revenue: {
+      total: number;
+      avg: number;
+      byStatus: { completed: number; pending: number; cancelled: number };
+      /** Platform's actual cut (5% of item subtotal + featured fees) on completed orders — not GMV. */
+      platformFee: number;
+    };
   };
   listings: { total: number; active: number; sold: number; removed: number };
   users: { total: number };

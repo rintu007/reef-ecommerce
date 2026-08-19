@@ -104,6 +104,7 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
           pending: Number(revenue?.revenue_pending ?? 0),
           cancelled: Number(revenue?.revenue_cancelled ?? 0),
         },
+        platformFee: Number(revenue?.platform_fee_completed ?? 0),
       },
     },
     listings: {

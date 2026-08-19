@@ -40,11 +40,15 @@ function SalesAnalyticsContent() {
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
       <View className="flex-row flex-wrap gap-3">
-        <StatCard label="Total Revenue" value={`$${analytics.orders.revenue.total.toFixed(2)}`} />
+        <StatCard label="Total Revenue (GMV)" value={`$${analytics.orders.revenue.total.toFixed(2)}`} />
+        <StatCard label="Platform Earnings" value={`$${analytics.orders.revenue.platformFee.toFixed(2)}`} />
         <StatCard label="Total Orders" value={String(analytics.orders.total)} />
         <StatCard label="Completed" value={String(analytics.orders.completed)} />
         <StatCard label="Avg Order" value={`$${analytics.orders.revenue.avg.toFixed(2)}`} />
       </View>
+      <Text className="text-xs text-muted-foreground -mt-2">
+        Total Revenue is gross order value (what buyers paid). Platform Earnings is your actual 5% + featured-fee take on completed orders.
+      </Text>
 
       <View className="gap-3">
         <View className="rounded-xl border border-border bg-card p-4">
