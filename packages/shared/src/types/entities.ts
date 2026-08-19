@@ -429,6 +429,15 @@ export const promoCodeCreateSchema = promoCodeSchema
   .omit({ id: true, uses: true, created_at: true, updated_at: true })
   .partial({ bonus_listings: true, expires_at: true, is_active: true, notes: true });
 export type PromoCodeCreateInput = z.infer<typeof promoCodeCreateSchema>;
+
+export const promoCodeRedemptionSchema = z.object({
+  id: uuid(),
+  user_id: uuid(),
+  redeemed_at: isoDateTime(),
+  user_email: z.string().nullable(),
+  user_display_name: z.string().nullable(),
+});
+export type PromoCodeRedemption = z.infer<typeof promoCodeRedemptionSchema>;
 export const promoCodeUpdateSchema = promoCodeCreateSchema.partial();
 export type PromoCodeUpdateInput = z.infer<typeof promoCodeUpdateSchema>;
 

@@ -1,4 +1,4 @@
-import type { PromoCode, PromoCodeCreateInput, PromoCodeUpdateInput } from "@reef-market/shared";
+import type { PromoCode, PromoCodeCreateInput, PromoCodeRedemption, PromoCodeUpdateInput } from "@reef-market/shared";
 import { AppError } from "./http";
 import { supabaseAdmin } from "./supabase-admin";
 
@@ -127,4 +127,26 @@ export async function deletePromoCode(id: string): Promise<void> {
   const db = supabaseAdmin();
   const { error } = await db.from("promo_codes").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Who redeemed a given code, and when — the aggregate uses/max_uses count on the code itself doesn't say. */
+export async function getPromoCodeRedemptions(promoCodeId: string): Promise<PromoCodeRedemption[]> {
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("promo_code_redemptions")
+    .select("id, user_id, redeemed_at, profiles(email, display_name)")
+    .eq("promo_code_id", promoCodeId)
+    .order("redeemed_at", { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      redeemed_at: row.redeemed_at,
+      user_email: profile?.email ?? null,
+      user_display_name: profile?.display_name ?? null,
+    };
+  });
 }

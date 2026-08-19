@@ -33,6 +33,7 @@ import type {
   ProfileUpdateInput,
   PromoCode,
   PromoCodeCreateInput,
+  PromoCodeRedemption,
   PromoCodeUpdateInput,
   PublicProfile,
   Report,
@@ -441,6 +442,10 @@ export function updatePromoCode(client: ApiClient, id: string, input: PromoCodeU
 
 export function deletePromoCode(client: ApiClient, id: string) {
   return client.delete<{ deleted: true }>(`/api/admin/promo-codes/${id}`);
+}
+
+export function listPromoCodeRedemptions(client: ApiClient, id: string) {
+  return client.get<{ redemptions: PromoCodeRedemption[] }>(`/api/admin/promo-codes/${id}/redemptions`);
 }
 
 // ============================================================== membership / subscriptions
