@@ -43,6 +43,7 @@ export const profileSchema = z.object({
   id: uuid(),
   email: z.string().email(),
   role: userRoleSchema,
+  admin_permissions: z.array(z.string()),
   display_name: z.string().nullable(),
   avatar_url: z.string().nullable(),
   tank_photos: z.array(z.string()),

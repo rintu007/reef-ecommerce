@@ -357,6 +357,10 @@ export function updateUserRole(client: ApiClient, id: string, role: UserRole) {
   return client.patch<{ profile: Profile }>(`/api/admin/users/${id}`, { role });
 }
 
+export function updateAdminPermissions(client: ApiClient, id: string, admin_permissions: string[]) {
+  return client.patch<{ profile: Profile }>(`/api/admin/users/${id}`, { admin_permissions });
+}
+
 export interface AdminReport extends Report {
   reporter: { id: string; display_name: string | null; email: string } | null;
   reported: { id: string; display_name: string | null; email: string } | null;

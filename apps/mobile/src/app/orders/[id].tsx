@@ -175,6 +175,7 @@ export default function OrderDetailScreen() {
   const [carrier, setCarrier] = useState("");
   const [added, setAdded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canManageFinances, setCanManageFinances] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -191,7 +192,10 @@ export default function OrderDetailScreen() {
   useEffect(() => {
     if (!session) return;
     getOwnProfile(apiClient)
-      .then(({ profile }) => setIsAdmin(profile.role === "admin"))
+      .then(({ profile }) => {
+        setIsAdmin(profile.role === "admin");
+        setCanManageFinances(profile.admin_permissions.includes("manage_finances"));
+      })
       .catch(() => {});
   }, [session]);
 
@@ -367,7 +371,7 @@ export default function OrderDetailScreen() {
             </Pressable>
           )}
 
-          {role === "admin" && order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled" && (
+          {role === "admin" && canManageFinances && order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled" && (
             <View className="flex-row gap-2">
               <Pressable onPress={() => run(() => refundOrder(apiClient, order.id, "refund"))} disabled={busy} className="bg-red-100 rounded-xl px-4 py-2.5">
                 <Text className="text-sm font-semibold text-red-800">Refund via Stripe</Text>

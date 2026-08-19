@@ -24,7 +24,16 @@ const BTN_PRIMARY = "px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-se
 const BTN_DANGER = "px-4 py-2 rounded-lg bg-red-100 text-red-800 text-sm font-semibold hover:bg-red-200 transition-colors disabled:opacity-50";
 const BTN_SECONDARY = "px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50";
 
-export function OrderActions({ order, role }: { order: Order; role: "buyer" | "seller" | "admin" }) {
+export function OrderActions({
+  order,
+  role,
+  canManageFinances = false,
+}: {
+  order: Order;
+  role: "buyer" | "seller" | "admin";
+  /** Refund/store-credit need more than role==="admin" — see requireAdminPermission("manage_finances"). Deny Claim doesn't move money, so it stays plain-admin-gated. */
+  canManageFinances?: boolean;
+}) {
   const router = useRouter();
   const { addItem } = useCart();
   const [busy, setBusy] = useState(false);
@@ -85,7 +94,7 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
         order.status === "cancelled" ||
         claimEligible)) ||
     (role === "seller" && order.status === "confirmed") ||
-    (role === "admin" && !!order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled") ||
+    (role === "admin" && canManageFinances && !!order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled") ||
     (role === "admin" && !!order.doa_claim_status);
 
   if (!hasAnyAction) return null;
@@ -163,7 +172,7 @@ export function OrderActions({ order, role }: { order: Order; role: "buyer" | "s
         </button>
       )}
 
-      {role === "admin" && order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled" && (
+      {role === "admin" && canManageFinances && order.payment_intent_id && order.status !== "doa_claim" && order.status !== "cancelled" && (
         <div className="flex gap-2">
           <button onClick={() => run(() => refundOrder(apiClient, order.id, "refund"))} disabled={busy} className={BTN_DANGER}>
             Refund via Stripe

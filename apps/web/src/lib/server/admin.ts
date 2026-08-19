@@ -165,6 +165,13 @@ export async function updateUserRole(userId: string, role: UserRole): Promise<Pr
   return data as Profile;
 }
 
+export async function updateAdminPermissions(userId: string, permissions: string[]): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("profiles").update({ admin_permissions: permissions }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
 export interface AdminReport extends Report {
   reporter: { id: string; display_name: string | null; email: string } | null;
   reported: { id: string; display_name: string | null; email: string } | null;

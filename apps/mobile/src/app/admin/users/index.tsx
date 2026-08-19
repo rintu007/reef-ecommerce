@@ -1,4 +1,4 @@
-import { listAdminUsers, updateUserRole, type Profile, type UserRole } from "@reef-market/shared";
+import { ADMIN_PERMISSIONS, listAdminUsers, updateAdminPermissions, updateUserRole, type Profile, type UserRole } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useRouter } from "expo-router";
 import { ArrowLeft, Search } from "lucide-react-native";
@@ -54,6 +54,21 @@ function AdminUsersContent() {
     }
   }
 
+  async function togglePermission(user: Profile, permission: string) {
+    setBusyId(user.id);
+    try {
+      const next = user.admin_permissions.includes(permission)
+        ? user.admin_permissions.filter((p) => p !== permission)
+        : [...user.admin_permissions, permission];
+      await updateAdminPermissions(apiClient, user.id, next);
+      await load(q);
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Failed to update permissions");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <View className="flex-1">
       <View className="flex-row items-center gap-2 bg-muted rounded-xl px-3 h-10 mx-4 mt-3 mb-1">
@@ -90,34 +105,58 @@ function AdminUsersContent() {
             const isBusy = busyId === item.id;
             const isSelf = item.id === currentUserId;
             return (
-              <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
-                <View className="w-9 h-9 rounded-full overflow-hidden bg-muted items-center justify-center shrink-0">
-                  {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={{ width: 36, height: 36 }} contentFit="cover" />
-                  ) : (
-                    <Text className="text-sm">👤</Text>
-                  )}
-                </View>
-                <Link href={`/sellers/${item.id}`} asChild>
-                  <Pressable className="flex-1 min-w-0">
-                    <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
-                      {item.display_name ?? "Unnamed"}
+              <View className="rounded-xl border border-border bg-card p-3">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-9 h-9 rounded-full overflow-hidden bg-muted items-center justify-center shrink-0">
+                    {item.avatar_url ? (
+                      <Image source={{ uri: item.avatar_url }} style={{ width: 36, height: 36 }} contentFit="cover" />
+                    ) : (
+                      <Text className="text-sm">👤</Text>
+                    )}
+                  </View>
+                  <Link href={`/sellers/${item.id}`} asChild>
+                    <Pressable className="flex-1 min-w-0">
+                      <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
+                        {item.display_name ?? "Unnamed"}
+                      </Text>
+                      <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                        {item.email}
+                      </Text>
+                    </Pressable>
+                  </Link>
+                  <View className={`px-2 py-1 rounded-full shrink-0 ${item.role === "admin" ? "bg-primary" : "bg-muted"}`}>
+                    <Text className={`text-[10px] font-semibold ${item.role === "admin" ? "text-white" : "text-muted-foreground"}`}>
+                      {item.role}
                     </Text>
-                    <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                      {item.email}
+                  </View>
+                  <Pressable onPress={() => toggleAdmin(item)} disabled={isBusy || isSelf} className="shrink-0">
+                    <Text className="text-xs font-semibold text-primary" style={{ opacity: isBusy || isSelf ? 0.4 : 1 }}>
+                      {item.role === "admin" ? "Revoke admin" : "Make admin"}
                     </Text>
                   </Pressable>
-                </Link>
-                <View className={`px-2 py-1 rounded-full shrink-0 ${item.role === "admin" ? "bg-primary" : "bg-muted"}`}>
-                  <Text className={`text-[10px] font-semibold ${item.role === "admin" ? "text-white" : "text-muted-foreground"}`}>
-                    {item.role}
-                  </Text>
                 </View>
-                <Pressable onPress={() => toggleAdmin(item)} disabled={isBusy || isSelf} className="shrink-0">
-                  <Text className="text-xs font-semibold text-primary" style={{ opacity: isBusy || isSelf ? 0.4 : 1 }}>
-                    {item.role === "admin" ? "Revoke admin" : "Make admin"}
-                  </Text>
-                </Pressable>
+
+                {item.role === "admin" && (
+                  <View className="flex-row flex-wrap gap-2 mt-2 pt-2 border-t border-border">
+                    {Object.entries(ADMIN_PERMISSIONS).map(([key, meta]) => {
+                      const granted = item.admin_permissions.includes(key);
+                      return (
+                        <Pressable
+                          key={key}
+                          onPress={() => togglePermission(item, key)}
+                          disabled={isBusy}
+                          className="px-2.5 py-1 rounded-full"
+                          style={{ backgroundColor: granted ? "#d1fae5" : themeColors.border, opacity: isBusy ? 0.4 : 1 }}
+                        >
+                          <Text className="text-[11px] font-semibold" style={{ color: granted ? "#047857" : themeColors.mutedForeground }}>
+                            {granted ? "✓ " : ""}
+                            {meta.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
               </View>
             );
           }}

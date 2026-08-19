@@ -1,3 +1,4 @@
+import type { AdminPermission } from "@reef-market/shared";
 import { supabaseAdmin } from "./supabase-admin";
 import { createSupabaseServerClient } from "./supabase-server-client";
 
@@ -5,6 +6,7 @@ export interface AuthUser {
   id: string;
   email: string;
   role: "admin" | "user";
+  adminPermissions: string[];
 }
 
 export class ApiAuthError extends Error {
@@ -47,12 +49,17 @@ export async function getAuthenticatedUser(request?: Request): Promise<AuthUser 
 
   const { data: profile, error: profileError } = await supabaseAdmin()
     .from("profiles")
-    .select("role")
+    .select("role, admin_permissions")
     .eq("id", userId)
     .single();
   if (profileError || !profile) return null;
 
-  return { id: userId, email, role: profile.role as AuthUser["role"] };
+  return {
+    id: userId,
+    email,
+    role: profile.role as AuthUser["role"],
+    adminPermissions: (profile.admin_permissions as string[] | null) ?? [],
+  };
 }
 
 export async function requireUser(request?: Request): Promise<AuthUser> {
@@ -64,5 +71,14 @@ export async function requireUser(request?: Request): Promise<AuthUser> {
 export async function requireAdmin(request?: Request): Promise<AuthUser> {
   const user = await requireUser(request);
   if (user.role !== "admin") throw new ApiAuthError("Admin access required", 403);
+  return user;
+}
+
+/** Narrower than requireAdmin — role='admin' is necessary but not sufficient for money-moving actions (refunds, store credit); the admin also needs this specific permission granted. */
+export async function requireAdminPermission(request: Request | undefined, permission: AdminPermission): Promise<AuthUser> {
+  const user = await requireAdmin(request);
+  if (!user.adminPermissions.includes(permission)) {
+    throw new ApiAuthError(`Missing admin permission: ${permission}`, 403);
+  }
   return user;
 }
