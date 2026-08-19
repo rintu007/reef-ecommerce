@@ -21,6 +21,7 @@ const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => stri
   { href: "/admin/announcements", title: "Announcements", describe: () => "Broadcast banner shown on app load" },
   { href: "/admin/help-content", title: "Learn Content", describe: () => "Care guides shown on the Learn tab" },
   { href: "/admin/promo-codes", title: "Promo Codes", describe: () => "Bonus listings & free membership grants" },
+  { href: "/admin/seller-payouts", title: "Seller Payouts", describe: () => "Stripe Connect onboarding & payout status" },
   { href: "/admin/sales-analytics", title: "Sales Analytics", describe: () => "Revenue, order status, and recent activity" },
   { href: "/admin/app-analytics", title: "App Analytics", describe: () => "Users, listings, reviews, and visitor stats" },
 ];

@@ -1,3 +1,4 @@
+import type { SellerPayoutStatus } from "@reef-market/shared";
 import { stripe } from "./stripe";
 import { supabaseAdmin } from "./supabase-admin";
 import { env } from "./env";
@@ -73,4 +74,28 @@ export async function syncPayoutAccountStatus(stripeAccountId: string, payoutsEn
     .from("seller_payout_accounts")
     .update({ payouts_enabled: payoutsEnabled, onboarding_complete: detailsSubmitted })
     .eq("stripe_account_id", stripeAccountId);
+}
+
+/** Only covers sellers who've started Connect onboarding at least once — no row exists for a seller who never clicked "Connect Stripe". */
+export async function listSellerPayoutAccounts(): Promise<SellerPayoutStatus[]> {
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("seller_payout_accounts")
+    .select("user_id, stripe_account_id, onboarding_complete, payouts_enabled, created_at, updated_at, profiles(email, display_name)")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    return {
+      user_id: row.user_id,
+      stripe_account_id: row.stripe_account_id,
+      onboarding_complete: row.onboarding_complete,
+      payouts_enabled: row.payouts_enabled,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      user_email: profile?.email ?? null,
+      user_display_name: profile?.display_name ?? null,
+    };
+  });
 }

@@ -1,3 +1,14 @@
+export interface SellerPayoutStatus {
+  user_id: string;
+  user_email: string | null;
+  user_display_name: string | null;
+  stripe_account_id: string | null;
+  onboarding_complete: boolean;
+  payouts_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminStats {
   listings: { total: number; active: number; pending_approval: number; sold: number; removed: number };
   users: { total: number };

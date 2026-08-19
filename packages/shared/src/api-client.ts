@@ -51,7 +51,7 @@ import type {
   UserSubscription,
 } from "./types/entities";
 import type { PlanSlug, ReportStatus, UserRole } from "./types/enums";
-import type { AdminAnalytics, AdminStats } from "./types/admin";
+import type { AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
 
 export class ApiError extends Error {
   status: number;
@@ -322,6 +322,10 @@ export function getAdminStats(client: ApiClient) {
 
 export function getAdminAnalytics(client: ApiClient) {
   return client.get<AdminAnalytics>("/api/admin/analytics");
+}
+
+export function listSellerPayoutAccounts(client: ApiClient) {
+  return client.get<{ accounts: SellerPayoutStatus[] }>("/api/admin/seller-payouts");
 }
 
 export function listAdminOrders(client: ApiClient, params: { limit?: number } = {}) {
