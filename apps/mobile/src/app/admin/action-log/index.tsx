@@ -9,7 +9,20 @@ import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
 
-const TARGET_TYPES = ["all", "order", "listing", "user", "report", "announcement", "promo_code", "help_content"];
+const TARGET_TYPES = [
+  "all",
+  "order",
+  "listing",
+  "service",
+  "review",
+  "user",
+  "report",
+  "announcement",
+  "promo_code",
+  "help_content",
+  "membership_plan",
+  "blocked_user",
+];
 const PAGE_SIZE = 100;
 
 function humanize(action: string): string {

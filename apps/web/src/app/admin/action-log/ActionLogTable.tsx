@@ -4,7 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { listAdminActionLog, type AdminActionLogEntry } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 
-const TARGET_TYPES = ["all", "order", "listing", "user", "report", "announcement", "promo_code", "help_content"];
+const TARGET_TYPES = [
+  "all",
+  "order",
+  "listing",
+  "service",
+  "review",
+  "user",
+  "report",
+  "announcement",
+  "promo_code",
+  "help_content",
+  "membership_plan",
+  "blocked_user",
+];
 
 function humanize(action: string): string {
   return action.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
