@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
+import { markAdminBadgeSeen } from "@/components/admin/NewSinceBadge";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
@@ -54,6 +55,13 @@ function DoaClaimsContent() {
     const timer = setTimeout(load, 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      listDoaClaims(apiClient, { status: "pending", limit: 1 }).then(({ total }) => markAdminBadgeSeen("doa_claims", total));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>

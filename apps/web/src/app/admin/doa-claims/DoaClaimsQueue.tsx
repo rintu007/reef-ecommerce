@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { listDoaClaims, type AdminDoaClaim, type DoaClaimReviewStatus } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+import { markAdminBadgeSeen } from "@/components/admin/NewSinceBadge";
 
 const STATUS_TABS: { value: DoaClaimReviewStatus | "all"; label: string }[] = [
   { value: "pending", label: "Pending" },
@@ -36,6 +37,13 @@ export function DoaClaimsQueue() {
     const timer = setTimeout(load, 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      listDoaClaims(apiClient, { status: "pending", limit: 1 }).then(({ total }) => markAdminBadgeSeen("doa_claims", total));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div>
