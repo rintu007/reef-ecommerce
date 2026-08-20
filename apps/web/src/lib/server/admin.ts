@@ -1,4 +1,10 @@
-import type { AdminAnalytics, AdminStats, Profile, Report, ReportStatus, UserRole, VisitorLog } from "@reef-market/shared";
+import type { AdminAnalytics, AdminStats, Listing, Order, Profile, Report, ReportStatus, UserRole, VisitorLog } from "@reef-market/shared";
+import type { AuthUser } from "./auth";
+import { queryListings } from "./listings";
+import { listAllBlockedUsers, type AdminBlockedUser } from "./moderation";
+import { listOrdersForUser } from "./orders";
+import { listAdminReviews, type AdminReview } from "./reviews";
+import { getOwnSubscription, type OwnSubscriptionResult } from "./subscriptions";
 import { supabaseAdmin } from "./supabase-admin";
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -180,6 +186,8 @@ export interface AdminReport extends Report {
 
 export interface AdminReportListParams {
   status?: ReportStatus;
+  /** Reports this one user filed or was named in — either side. */
+  userId?: string;
   limit?: number;
   offset?: number;
 }
@@ -188,6 +196,7 @@ export async function listAdminReports(params: AdminReportListParams): Promise<{
   const db = supabaseAdmin();
   let query = db.from("reports").select("*", { count: "exact" });
   if (params.status) query = query.eq("status", params.status);
+  if (params.userId) query = query.or(`reporter_id.eq.${params.userId},reported_id.eq.${params.userId}`);
 
   const limit = Math.min(params.limit ?? 50, 200);
   const offset = Math.max(params.offset ?? 0, 0);
@@ -219,6 +228,52 @@ export async function listAdminReports(params: AdminReportListParams): Promise<{
       listing: r.listing_id ? listingMap.get(r.listing_id) ?? null : null,
     })),
     total: count ?? reports.length,
+  };
+}
+
+export interface AdminUserDetail {
+  profile: Profile;
+  listings: Listing[];
+  ordersAsBuyer: Order[];
+  ordersAsSeller: Order[];
+  subscription: OwnSubscriptionResult;
+  reviews: AdminReview[];
+  reports: AdminReport[];
+  blockedRelationships: AdminBlockedUser[];
+}
+
+/**
+ * "Why can't this user see X" support debugging meant either trusting the
+ * user's own description or reaching for a direct DB query — no read-only
+ * way to see what a support agent needs about one account in one place.
+ * Deliberately a read-only aggregate (not session impersonation): every
+ * piece here is an admin-authorized read of data the user already owns,
+ * so there is no new mutation surface to guard.
+ */
+export async function getAdminUserDetail(userId: string, viewer: AuthUser): Promise<AdminUserDetail> {
+  const db = supabaseAdmin();
+  const { data: profile, error } = await db.from("profiles").select("*").eq("id", userId).single();
+  if (error) throw error;
+
+  const [listingsResult, ordersAsBuyer, ordersAsSeller, subscription, reviewsResult, reportsResult, blockedResult] = await Promise.all([
+    queryListings({ sellerId: userId, limit: 100 }, viewer),
+    listOrdersForUser(userId, "buyer"),
+    listOrdersForUser(userId, "seller"),
+    getOwnSubscription(userId),
+    listAdminReviews({ userId, limit: 100 }),
+    listAdminReports({ userId, limit: 100 }),
+    listAllBlockedUsers({ userId, limit: 100 }),
+  ]);
+
+  return {
+    profile: profile as Profile,
+    listings: listingsResult.listings,
+    ordersAsBuyer,
+    ordersAsSeller,
+    subscription,
+    reviews: reviewsResult.reviews,
+    reports: reportsResult.reports,
+    blockedRelationships: blockedResult.blockedUsers,
   };
 }
 

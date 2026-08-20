@@ -83,10 +83,15 @@ export function AdminUsersTable({ currentUserId }: { currentUserId: string }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/sellers/${user.id}`} className="font-semibold text-sm hover:underline truncate block">
+                  <Link href={`/admin/users/${user.id}`} className="font-semibold text-sm hover:underline truncate block">
                     {user.display_name ?? "Unnamed"}
                   </Link>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user.email} ·{" "}
+                    <Link href={`/sellers/${user.id}`} className="hover:underline">
+                      storefront
+                    </Link>
+                  </p>
                 </div>
                 <span
                   className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${

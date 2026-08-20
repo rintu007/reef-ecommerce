@@ -27,6 +27,7 @@ import type {
   ListingCreateInput,
   ListingUpdateInput,
   MembershipPlan,
+  MembershipPlanUpdateInput,
   Message,
   Order,
   Profile,
@@ -51,7 +52,7 @@ import type {
   UserSubscription,
   VisitorLog,
 } from "./types/entities";
-import type { DoaClaimReviewStatus, PlanSlug, ReportStatus, UserRole } from "./types/enums";
+import type { DoaClaimReviewStatus, PlanSlug, ReportStatus, SubscriptionStatus, UserRole } from "./types/enums";
 import type { AdminActionLogEntry, AdminAnalytics, AdminStats, SellerPayoutStatus } from "./types/admin";
 
 export class ApiError extends Error {
@@ -278,6 +279,18 @@ export function sendMessage(client: ApiClient, input: SendMessageInput) {
   return client.post<{ message: Message }>("/api/messages", input);
 }
 
+export interface AdminMessage extends Message {
+  sender_email: string | null;
+  sender_display_name: string | null;
+}
+
+/** Views the conversation between two users, if any — used from a report's reporter/reported pair. Never creates one, and doesn't require the caller to be a participant (admin-only). */
+export function getAdminConversation(client: ApiClient, userA: string, userB: string) {
+  return client.get<{ conversationId: string | null; messages: AdminMessage[] }>(
+    `/api/admin/conversations${toQueryString({ user_a: userA, user_b: userB })}`
+  );
+}
+
 // ============================================================== profile
 
 export function getOwnProfile(client: ApiClient) {
@@ -359,6 +372,22 @@ export function updateUserRole(client: ApiClient, id: string, role: UserRole) {
 
 export function updateAdminPermissions(client: ApiClient, id: string, admin_permissions: string[]) {
   return client.patch<{ profile: Profile }>(`/api/admin/users/${id}`, { admin_permissions });
+}
+
+export interface AdminUserDetail {
+  profile: Profile;
+  listings: Listing[];
+  ordersAsBuyer: Order[];
+  ordersAsSeller: Order[];
+  subscription: { subscription: UserSubscription | null; plan: MembershipPlan };
+  reviews: AdminReview[];
+  reports: AdminReport[];
+  blockedRelationships: AdminBlockedUser[];
+}
+
+/** Read-only "view as user" support snapshot — everything about one account in one call, no session impersonation involved. */
+export function getAdminUserDetail(client: ApiClient, id: string) {
+  return client.get<AdminUserDetail>(`/api/admin/users/${id}/detail`);
 }
 
 export interface AdminReport extends Report {
@@ -459,6 +488,20 @@ export function unblockUser(client: ApiClient, blockedId: string) {
   return client.delete<{ deleted: true }>(`/api/blocked-users/${blockedId}`);
 }
 
+export interface AdminBlockedUser extends BlockedUser {
+  blocker: { id: string; display_name: string | null; email: string } | null;
+  blocked: { id: string; display_name: string | null; email: string } | null;
+}
+
+export function listAllBlockedUsers(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
+  return client.get<{ blockedUsers: AdminBlockedUser[]; total: number }>(`/api/admin/blocked-users${toQueryString(params)}`);
+}
+
+/** id is the blocked_users row id, not a user id. */
+export function adminUnblockUser(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/admin/blocked-users/${id}`);
+}
+
 // ============================================================== promo codes
 
 export function redeemPromoCode(client: ApiClient, code: string) {
@@ -491,6 +534,14 @@ export function listMembershipPlans(client: ApiClient) {
   return client.get<{ plans: MembershipPlan[] }>("/api/membership-plans");
 }
 
+export function listAdminMembershipPlans(client: ApiClient) {
+  return client.get<{ plans: MembershipPlan[] }>("/api/admin/membership-plans");
+}
+
+export function updateMembershipPlan(client: ApiClient, id: string, input: MembershipPlanUpdateInput) {
+  return client.patch<{ plan: MembershipPlan }>(`/api/admin/membership-plans/${id}`, input);
+}
+
 export function getOwnSubscription(client: ApiClient) {
   return client.get<{ subscription: UserSubscription | null; plan: MembershipPlan }>("/api/subscriptions");
 }
@@ -501,6 +552,18 @@ export function createSubscriptionCheckout(client: ApiClient, planSlug: PlanSlug
 
 export function cancelSubscription(client: ApiClient) {
   return client.post<{ subscription: UserSubscription }>("/api/subscriptions/cancel");
+}
+
+export interface AdminSubscription extends UserSubscription {
+  user_email: string | null;
+  user_display_name: string | null;
+}
+
+export function listAdminSubscriptions(
+  client: ApiClient,
+  params: { status?: SubscriptionStatus; plan_slug?: PlanSlug; limit?: number; offset?: number } = {}
+) {
+  return client.get<{ subscriptions: AdminSubscription[]; total: number }>(`/api/admin/subscriptions${toQueryString(params)}`);
 }
 
 // ============================================================== watchlist
@@ -587,6 +650,20 @@ export function denyDoaClaim(client: ApiClient, id: string) {
 
 export function createReview(client: ApiClient, input: ReviewCreateInput) {
   return client.post<{ review: Review }>("/api/reviews", input);
+}
+
+export interface AdminReview extends Review {
+  reviewer: { id: string; display_name: string | null; email: string } | null;
+  seller: { id: string; display_name: string | null; email: string } | null;
+  listing: { id: string; title: string } | null;
+}
+
+export function listAdminReviews(client: ApiClient, params: { max_rating?: number; limit?: number; offset?: number } = {}) {
+  return client.get<{ reviews: AdminReview[]; total: number }>(`/api/admin/reviews${toQueryString(params)}`);
+}
+
+export function deleteAdminReview(client: ApiClient, id: string) {
+  return client.delete<{ deleted: true }>(`/api/admin/reviews/${id}`);
 }
 
 export interface SellerReviewSummary {
