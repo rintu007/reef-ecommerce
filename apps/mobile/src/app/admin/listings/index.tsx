@@ -60,6 +60,8 @@ function AdminListingsContent() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +73,7 @@ function AdminListingsContent() {
       });
       setListings(listings);
       setTotal(total);
+      setSelected(new Set());
     } finally {
       setLoading(false);
     }
@@ -133,6 +136,32 @@ function AdminListingsContent() {
     }
   }
 
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkSetStatus(next: "active" | "removed") {
+    if (selected.size === 0) return;
+    if (next === "removed") {
+      const confirmed = await confirmAsync(`Remove ${selected.size} listing(s)?`, "This can be undone individually later.", "Remove");
+      if (!confirmed) return;
+    }
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => updateListing(apiClient, id, { status: next })));
+      await load();
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Bulk action failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <View className="flex-1">
       <ScrollView
@@ -153,9 +182,18 @@ function AdminListingsContent() {
         <FlatList
           data={listings}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, paddingTop: 0, gap: 10 }}
+          contentContainerStyle={{ padding: 16, paddingTop: 0, gap: 10, paddingBottom: selected.size > 0 ? 72 : 16 }}
           ListHeaderComponent={
-            listings.length > 0 ? <Text className="text-xs text-muted-foreground mb-1">{total} listing(s)</Text> : null
+            listings.length > 0 ? (
+              <Pressable
+                onPress={() => setSelected((prev) => (prev.size === listings.length ? new Set() : new Set(listings.map((l) => l.id))))}
+                className="mb-1"
+              >
+                <Text className="text-xs text-muted-foreground">
+                  {selected.size === listings.length ? "☑" : "☐"} {total} listing(s) {selected.size > 0 && `· ${selected.size} selected`}
+                </Text>
+              </Pressable>
+            ) : null
           }
           ListEmptyComponent={
             <View className="items-center py-24 px-6">
@@ -164,9 +202,13 @@ function AdminListingsContent() {
           }
           renderItem={({ item }) => {
             const isBusy = busyId === item.id;
+            const isSelected = selected.has(item.id);
             return (
               <View className="rounded-xl border border-border bg-card overflow-hidden">
                 <View className="flex-row items-center gap-3 p-3">
+                  <Pressable onPress={() => toggleSelected(item.id)} className="w-5 h-5 items-center justify-center shrink-0">
+                    <Text>{isSelected ? "☑" : "☐"}</Text>
+                  </Pressable>
                   <View className="w-12 h-12 rounded-lg overflow-hidden bg-muted shrink-0">
                     {item.photos[0] && <Image source={{ uri: item.photos[0] }} style={{ width: 48, height: 48 }} contentFit="cover" />}
                   </View>
@@ -203,6 +245,25 @@ function AdminListingsContent() {
             );
           }}
         />
+      )}
+
+      {selected.size > 0 && (
+        <View className="absolute bottom-4 left-4 right-4 bg-foreground rounded-full flex-row items-center justify-center gap-5 py-3 shadow-lg">
+          <Text className="text-xs font-semibold text-background">{selected.size} selected</Text>
+          <Pressable onPress={() => bulkSetStatus("active")} disabled={bulkBusy}>
+            <Text className="text-xs font-semibold text-emerald-400" style={bulkBusy ? { opacity: 0.5 } : undefined}>
+              {bulkBusy ? "Working…" : "Approve"}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => bulkSetStatus("removed")} disabled={bulkBusy}>
+            <Text className="text-xs font-semibold text-amber-400" style={bulkBusy ? { opacity: 0.5 } : undefined}>
+              Remove
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => setSelected(new Set())} disabled={bulkBusy}>
+            <Text className="text-xs font-semibold text-muted-foreground">Clear</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
