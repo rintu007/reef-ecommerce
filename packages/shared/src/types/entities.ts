@@ -407,6 +407,12 @@ export const membershipPlanSchema = z.object({
 });
 export type MembershipPlan = z.infer<typeof membershipPlanSchema>;
 
+/** slug is the enum identity key (plan_slug — 'free'|'pro'|'business', fixed by migration) and stays immutable; everything else is admin-editable. */
+export const membershipPlanUpdateSchema = membershipPlanSchema
+  .omit({ id: true, slug: true, created_at: true, updated_at: true })
+  .partial();
+export type MembershipPlanUpdateInput = z.infer<typeof membershipPlanUpdateSchema>;
+
 export const userSubscriptionSchema = z.object({
   id: uuid(),
   user_id: uuid(),

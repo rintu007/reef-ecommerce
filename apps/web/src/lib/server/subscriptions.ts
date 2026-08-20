@@ -1,4 +1,4 @@
-import type { MembershipPlan, PlanSlug, SubscriptionStatus, UserSubscription } from "@reef-market/shared";
+import type { MembershipPlan, MembershipPlanUpdateInput, PlanSlug, SubscriptionStatus, UserSubscription } from "@reef-market/shared";
 import type Stripe from "stripe";
 import { env } from "./env";
 import { AppError } from "./http";
@@ -12,9 +12,66 @@ export async function listMembershipPlans(): Promise<MembershipPlan[]> {
   return (data ?? []) as MembershipPlan[];
 }
 
+/** Unlike listMembershipPlans(), includes inactive plans — admin needs to see (and re-enable) a plan it turned off, not just the ones currently offered. */
+export async function listAllMembershipPlans(): Promise<MembershipPlan[]> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("membership_plans").select("*").order("price_monthly", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as MembershipPlan[];
+}
+
+/** slugs are a fixed 3-value enum (plan_slug) — plans are edited in place, not created/deleted from the admin UI. */
+export async function updateMembershipPlan(id: string, input: MembershipPlanUpdateInput): Promise<MembershipPlan> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("membership_plans").update(input).eq("id", id).select().single();
+  if (error) throw error;
+  return data as MembershipPlan;
+}
+
 export interface OwnSubscriptionResult {
   subscription: UserSubscription | null;
   plan: MembershipPlan;
+}
+
+export interface AdminSubscription extends UserSubscription {
+  user_email: string | null;
+  user_display_name: string | null;
+}
+
+export interface AdminSubscriptionListParams {
+  status?: SubscriptionStatus;
+  planSlug?: PlanSlug;
+  limit?: number;
+  offset?: number;
+}
+
+/** No screen previously listed which users hold which plan, or its status — only inferable indirectly (e.g. via role or a promo redemption). A user who's never subscribed (implicitly "free") has no row here at all, same as the table itself. */
+export async function listAdminSubscriptions(params: AdminSubscriptionListParams): Promise<{ subscriptions: AdminSubscription[]; total: number }> {
+  const db = supabaseAdmin();
+  let query = db.from("user_subscriptions").select("*", { count: "exact" });
+  if (params.status) query = query.eq("status", params.status);
+  if (params.planSlug) query = query.eq("plan_slug", params.planSlug);
+
+  const limit = Math.min(params.limit ?? 50, 200);
+  const offset = Math.max(params.offset ?? 0, 0);
+  query = query.order("updated_at", { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data: subscriptions, error, count } = await query;
+  if (error) throw error;
+  if (!subscriptions || subscriptions.length === 0) return { subscriptions: [], total: count ?? 0 };
+
+  const userIds = [...new Set(subscriptions.map((s) => s.user_id))];
+  const { data: profiles } = await db.from("profiles").select("id, email, display_name").in("id", userIds);
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return {
+    subscriptions: subscriptions.map((s) => ({
+      ...(s as UserSubscription),
+      user_email: profileMap.get(s.user_id)?.email ?? null,
+      user_display_name: profileMap.get(s.user_id)?.display_name ?? null,
+    })),
+    total: count ?? subscriptions.length,
+  };
 }
 
 export async function getOwnSubscription(userId: string): Promise<OwnSubscriptionResult> {
