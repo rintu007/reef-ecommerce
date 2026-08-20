@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getAdminAnalytics } from "@/lib/server/admin";
 import { ListingStatusPie, OrderStatusPie } from "@/components/admin/AnalyticsPies";
+import { CsvExportButton } from "@/components/admin/CsvExportButton";
+import { rowsToCsv } from "@/lib/csv";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -19,9 +21,28 @@ export default async function SalesAnalyticsPage() {
 
   const analytics = await getAdminAnalytics();
 
+  const csv = rowsToCsv([
+    ["Metric", "Value"],
+    ["Total Revenue (GMV)", analytics.orders.revenue.total.toFixed(2)],
+    ["Platform Earnings", analytics.orders.revenue.platformFee.toFixed(2)],
+    ["Total Orders", analytics.orders.total],
+    ["Completed Orders", analytics.orders.completed],
+    ["Pending Orders", analytics.orders.pending],
+    ["Avg Order Value", analytics.orders.revenue.avg.toFixed(2)],
+    ["Revenue — Completed", analytics.orders.revenue.byStatus.completed.toFixed(2)],
+    ["Revenue — Pending", analytics.orders.revenue.byStatus.pending.toFixed(2)],
+    ["Revenue — Cancelled", analytics.orders.revenue.byStatus.cancelled.toFixed(2)],
+    ["New Orders (30 days)", analytics.recentActivity.ordersLast30Days],
+    ["New Listings (30 days)", analytics.recentActivity.listingsLast30Days],
+    ["New Users (30 days)", analytics.recentActivity.usersLast30Days],
+  ]);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Sales Analytics</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Sales Analytics</h1>
+        <CsvExportButton filename="sales-analytics.csv" csv={csv} />
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Revenue (GMV)" value={`$${analytics.orders.revenue.total.toFixed(2)}`} />
