@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { listAdminReports, updateReportStatus, type AdminReport, type ReportStatus } from "@reef-market/shared";
+import { getAdminConversation, listAdminReports, updateReportStatus, type AdminMessage, type AdminReport, type ReportStatus } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+import { markAdminBadgeSeen } from "@/components/admin/NewSinceBadge";
 
 const STATUS_TABS: { value: ReportStatus | "all"; label: string }[] = [
   { value: "pending", label: "Pending" },
@@ -18,6 +19,9 @@ export function AdminReportsTable() {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<AdminMessage[]>([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,6 +41,13 @@ export function AdminReportsTable() {
     return () => clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      listAdminReports(apiClient, { status: "pending", limit: 1 }).then(({ total }) => markAdminBadgeSeen("reports", total));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   async function setReportStatus(id: string, newStatus: ReportStatus) {
     setBusyId(id);
     try {
@@ -44,6 +55,22 @@ export function AdminReportsTable() {
       await load();
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function toggleConversation(report: AdminReport) {
+    if (expandedId === report.id) {
+      setExpandedId(null);
+      return;
+    }
+    if (!report.reported_id) return;
+    setExpandedId(report.id);
+    setConversationLoading(true);
+    try {
+      const { messages } = await getAdminConversation(apiClient, report.reporter_id, report.reported_id);
+      setConversation(messages);
+    } finally {
+      setConversationLoading(false);
     }
   }
 
@@ -96,6 +123,11 @@ export function AdminReportsTable() {
                       </>
                     )}
                   </p>
+                  {report.reported_id && (
+                    <button onClick={() => toggleConversation(report)} className="text-xs text-blue-600 hover:underline mt-1">
+                      {expandedId === report.id ? "Hide conversation" : "View conversation"}
+                    </button>
+                  )}
                 </div>
                 <div className="flex gap-2 shrink-0 text-sm font-semibold">
                   {report.status !== "resolved" && (
@@ -118,6 +150,27 @@ export function AdminReportsTable() {
                   )}
                 </div>
               </div>
+
+              {expandedId === report.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-600 mb-2">Conversation between reporter and reported user</p>
+                  {conversationLoading ? (
+                    <p className="text-xs text-gray-400">Loading…</p>
+                  ) : conversation.length === 0 ? (
+                    <p className="text-xs text-gray-400">No messages between these two users.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {conversation.map((m) => (
+                        <div key={m.id} className="text-xs">
+                          <span className="font-semibold text-gray-700">{m.sender_display_name ?? m.sender_email ?? m.sender_id}</span>
+                          <span className="text-gray-400"> · {new Date(m.created_at).toLocaleString()}</span>
+                          <p className="text-gray-600 mt-0.5">{m.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
