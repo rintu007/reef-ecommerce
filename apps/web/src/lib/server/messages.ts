@@ -125,6 +125,44 @@ export async function markConversationRead(conversationId: string, userId: strin
   return true;
 }
 
+export interface AdminMessage extends Message {
+  sender_email: string | null;
+  sender_display_name: string | null;
+}
+
+/**
+ * A report's reporter/reported pair, viewed by an admin — unlike
+ * getConversationMessages(), this never creates a conversation and doesn't
+ * require the caller to be a participant. A report referencing a user with
+ * no message history returns an empty thread rather than an error, since
+ * that's a normal, unremarkable case (not every report follows contact).
+ */
+export async function getConversationForAdmin(userA: string, userB: string): Promise<{ conversationId: string | null; messages: AdminMessage[] }> {
+  const db = supabaseAdmin();
+  const { data: conversation, error } = await db
+    .from("conversations")
+    .select("id")
+    .or(`and(user_a_id.eq.${userA},user_b_id.eq.${userB}),and(user_a_id.eq.${userB},user_b_id.eq.${userA})`)
+    .maybeSingle();
+  if (error) throw error;
+  if (!conversation) return { conversationId: null, messages: [] };
+
+  const { data: messages, error: messagesError } = await db
+    .from("messages")
+    .select("*, profiles(email, display_name)")
+    .eq("conversation_id", conversation.id)
+    .order("created_at", { ascending: true });
+  if (messagesError) throw messagesError;
+
+  return {
+    conversationId: conversation.id,
+    messages: (messages ?? []).map((m) => {
+      const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return { ...(m as Message), sender_email: profile?.email ?? null, sender_display_name: profile?.display_name ?? null };
+    }),
+  };
+}
+
 export async function getOrCreateConversation(userA: string, userB: string, listingId: string | null): Promise<string> {
   const db = supabaseAdmin();
   const { data: existing, error: findError } = await db

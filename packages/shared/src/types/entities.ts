@@ -43,6 +43,7 @@ export const profileSchema = z.object({
   id: uuid(),
   email: z.string().email(),
   role: userRoleSchema,
+  admin_permissions: z.array(z.string()),
   display_name: z.string().nullable(),
   avatar_url: z.string().nullable(),
   tank_photos: z.array(z.string()),
@@ -364,6 +365,16 @@ export const reportSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type Report = z.infer<typeof reportSchema>;
+
+export const visitorLogSchema = z.object({
+  id: uuid(),
+  path: z.string(),
+  session_id: z.string(),
+  user_email: z.string().nullable(),
+  is_guest: z.boolean(),
+  created_at: isoDateTime(),
+});
+export type VisitorLog = z.infer<typeof visitorLogSchema>;
 export const reportCreateSchema = reportSchema
   .omit({ id: true, reporter_id: true, status: true, created_at: true, updated_at: true })
   .partial({ listing_id: true, reported_id: true, details: true });
@@ -396,6 +407,12 @@ export const membershipPlanSchema = z.object({
   updated_at: isoDateTime(),
 });
 export type MembershipPlan = z.infer<typeof membershipPlanSchema>;
+
+/** slug is the enum identity key (plan_slug — 'free'|'pro'|'business', fixed by migration) and stays immutable; everything else is admin-editable. */
+export const membershipPlanUpdateSchema = membershipPlanSchema
+  .omit({ id: true, slug: true, created_at: true, updated_at: true })
+  .partial();
+export type MembershipPlanUpdateInput = z.infer<typeof membershipPlanUpdateSchema>;
 
 export const userSubscriptionSchema = z.object({
   id: uuid(),
@@ -430,6 +447,15 @@ export const promoCodeCreateSchema = promoCodeSchema
   .omit({ id: true, uses: true, created_at: true, updated_at: true })
   .partial({ bonus_listings: true, expires_at: true, is_active: true, notes: true });
 export type PromoCodeCreateInput = z.infer<typeof promoCodeCreateSchema>;
+
+export const promoCodeRedemptionSchema = z.object({
+  id: uuid(),
+  user_id: uuid(),
+  redeemed_at: isoDateTime(),
+  user_email: z.string().nullable(),
+  user_display_name: z.string().nullable(),
+});
+export type PromoCodeRedemption = z.infer<typeof promoCodeRedemptionSchema>;
 export const promoCodeUpdateSchema = promoCodeCreateSchema.partial();
 export type PromoCodeUpdateInput = z.infer<typeof promoCodeUpdateSchema>;
 
@@ -467,12 +493,13 @@ export const announcementSchema = z.object({
   is_active: z.boolean(),
   max_views: z.number().int().nonnegative(),
   show_to_guests: z.boolean(),
+  emailed_at: isoDateTime().nullable(),
   created_at: isoDateTime(),
   updated_at: isoDateTime(),
 });
 export type Announcement = z.infer<typeof announcementSchema>;
 export const announcementCreateSchema = announcementSchema
-  .omit({ id: true, created_at: true, updated_at: true })
+  .omit({ id: true, created_at: true, updated_at: true, emailed_at: true })
   .partial({ is_active: true, max_views: true, show_to_guests: true });
 export type AnnouncementCreateInput = z.infer<typeof announcementCreateSchema>;
 export const announcementUpdateSchema = announcementCreateSchema.partial();

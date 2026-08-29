@@ -1,7 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createPromoCode, deletePromoCode, listAdminPromoCodes, updatePromoCode, type PromoCode, type PromoType } from "@reef-market/shared";
+import {
+  createPromoCode,
+  deletePromoCode,
+  listAdminPromoCodes,
+  listPromoCodeRedemptions,
+  updatePromoCode,
+  type PromoCode,
+  type PromoCodeRedemption,
+  type PromoType,
+} from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 
 const PROMO_TYPES: { value: PromoType; label: string }[] = [
@@ -14,6 +23,9 @@ export function AdminPromoCodesTable() {
   const [codes, setCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [redemptions, setRedemptions] = useState<PromoCodeRedemption[]>([]);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
 
   const [code, setCode] = useState("");
   const [type, setType] = useState<PromoType>("bonus_listings");
@@ -84,6 +96,21 @@ export function AdminPromoCodesTable() {
       await load();
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function toggleRedemptions(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    setRedemptionsLoading(true);
+    try {
+      const { redemptions } = await listPromoCodeRedemptions(apiClient, id);
+      setRedemptions(redemptions);
+    } finally {
+      setRedemptionsLoading(false);
     }
   }
 
@@ -161,31 +188,61 @@ export function AdminPromoCodesTable() {
       ) : (
         <div className="space-y-2">
           {codes.map((p) => (
-            <div key={p.id} className="rounded-xl border border-gray-200 p-3 bg-white flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold font-mono">
-                  {p.code}{" "}
-                  <span className={`text-xs font-sans font-normal ${p.is_active ? "text-emerald-600" : "text-gray-400"}`}>
-                    {p.is_active ? "active" : "inactive"}
-                  </span>
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {PROMO_TYPES.find((t) => t.value === p.type)?.label}
-                  {p.type === "bonus_listings" && ` · ${p.bonus_listings} slots`}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {p.uses}/{p.max_uses} used{p.expires_at ? ` · expires ${p.expires_at}` : ""}
-                </p>
-                {p.notes && <p className="text-xs text-gray-400 mt-1">{p.notes}</p>}
+            <div key={p.id} className="rounded-xl border border-gray-200 p-3 bg-white">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold font-mono">
+                    {p.code}{" "}
+                    <span className={`text-xs font-sans font-normal ${p.is_active ? "text-emerald-600" : "text-gray-400"}`}>
+                      {p.is_active ? "active" : "inactive"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {PROMO_TYPES.find((t) => t.value === p.type)?.label}
+                    {p.type === "bonus_listings" && ` · ${p.bonus_listings} slots`}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    <button onClick={() => toggleRedemptions(p.id)} className="hover:underline">
+                      {p.uses}/{p.max_uses} used
+                    </button>
+                    {p.expires_at ? ` · expires ${p.expires_at}` : ""}
+                  </p>
+                  {p.notes && <p className="text-xs text-gray-400 mt-1">{p.notes}</p>}
+                </div>
+                <div className="flex gap-3 shrink-0 text-sm font-semibold">
+                  <button onClick={() => toggleActive(p)} disabled={busyId === p.id} className="text-blue-600 hover:underline disabled:opacity-50">
+                    {p.is_active ? "Deactivate" : "Activate"}
+                  </button>
+                  <button onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-red-600 hover:underline disabled:opacity-50">
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-3 shrink-0 text-sm font-semibold">
-                <button onClick={() => toggleActive(p)} disabled={busyId === p.id} className="text-blue-600 hover:underline disabled:opacity-50">
-                  {p.is_active ? "Deactivate" : "Activate"}
-                </button>
-                <button onClick={() => handleDelete(p.id)} disabled={busyId === p.id} className="text-red-600 hover:underline disabled:opacity-50">
-                  Delete
-                </button>
-              </div>
+
+              {expandedId === p.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-600">Redemptions</p>
+                    <button onClick={() => setExpandedId(null)} className="text-xs text-gray-400 hover:underline">
+                      Hide
+                    </button>
+                  </div>
+                  {redemptionsLoading ? (
+                    <p className="text-xs text-gray-400">Loading…</p>
+                  ) : redemptions.length === 0 ? (
+                    <p className="text-xs text-gray-400">No one has redeemed this code yet.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {redemptions.map((r) => (
+                        <div key={r.id} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-700">{r.user_display_name || r.user_email || r.user_id}</span>
+                          <span className="text-gray-400">{new Date(r.redeemed_at).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

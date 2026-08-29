@@ -1,10 +1,12 @@
 import {
+  ADMIN_PERMISSIONS,
   adminDeleteUser,
   banUser,
   getUserActivityStats,
   grantPromoToUser,
   listAdminUsers,
   sendMessage,
+  updateAdminPermissions,
   updateUserRole,
   type Profile,
   type UserActivityStats,
@@ -148,6 +150,34 @@ function UserRow({ user, currentUserId, onChanged }: { user: Profile; currentUse
                 >
                   <Text className={`text-xs font-semibold ${user.role === "user" ? "text-background" : "text-foreground"}`}>User</Text>
                 </Pressable>
+              </View>
+            </View>
+          )}
+
+          {!isBanned && user.role === "admin" && (
+            <View className="gap-1.5">
+              <Text className="text-xs font-semibold text-foreground">Admin Permissions</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {Object.entries(ADMIN_PERMISSIONS).map(([key, meta]) => {
+                  const granted = user.admin_permissions.includes(key);
+                  const next = granted
+                    ? user.admin_permissions.filter((p) => p !== key)
+                    : [...user.admin_permissions, key];
+                  return (
+                    <Pressable
+                      key={key}
+                      disabled={busy}
+                      onPress={() => run(() => updateAdminPermissions(apiClient, user.id, next))}
+                      className="px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: granted ? "#d1fae5" : themeColors.border, opacity: busy ? 0.4 : 1 }}
+                    >
+                      <Text className="text-[11px] font-semibold" style={{ color: granted ? "#047857" : themeColors.mutedForeground }}>
+                        {granted ? "✓ " : ""}
+                        {meta.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           )}

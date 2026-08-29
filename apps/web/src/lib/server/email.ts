@@ -19,36 +19,6 @@ function resend(): Resend {
  */
 const FROM = "Reef Market <onboarding@resend.dev>";
 
-/**
- * Legacy parity: reef-trade-flow's admin "Broadcast Announcement" with
- * send_email enabled. Chunks into groups of 100 — Resend's batch endpoint's
- * limit — and treats a chunk failure as that whole chunk failing rather than
- * throwing, so one bad chunk doesn't abort the rest of the broadcast.
- *
- * NOTE: the sandbox sender (`onboarding@resend.dev`, see FROM below) can
- * only actually deliver to the Resend account owner's own verified email
- * until a custom sending domain is verified — broadcasting to real users
- * will report failures for everyone else until that's set up.
- */
-export async function sendBroadcastEmail(recipients: string[], subject: string, message: string): Promise<{ sent: number; failed: number }> {
-  const html = `<div style="white-space: pre-wrap; font-family: sans-serif;">${message}</div>`;
-  const chunks: string[][] = [];
-  for (let i = 0; i < recipients.length; i += 100) chunks.push(recipients.slice(i, i + 100));
-
-  let sent = 0;
-  let failed = 0;
-  for (const chunk of chunks) {
-    const { data, error } = await resend().batch.send(chunk.map((to) => ({ from: FROM, to, subject, html })));
-    if (error) {
-      failed += chunk.length;
-      continue;
-    }
-    sent += data?.data?.length ?? chunk.length;
-    failed += chunk.length - (data?.data?.length ?? chunk.length);
-  }
-  return { sent, failed };
-}
-
 /** Legacy parity: reef-trade-flow's Support page "Send Us a Message" contact form. */
 export async function sendSupportMessage(input: { name: string; email: string; type: string; message: string }): Promise<void> {
   const { error } = await resend().emails.send({
@@ -111,4 +81,46 @@ export async function sendPasswordResetEmail(to: string, resetLink: string): Pro
     `,
   });
   if (error) throw new Error(`Failed to send password reset email: ${error.message}`);
+}
+
+/**
+ * Legacy parity: legacy's Announce tab could email every registered user in
+ * addition to showing the in-app popup. Batched at 100/request — Resend's
+ * batch endpoint's own limit, not a guess — so a few thousand users is a
+ * handful of requests instead of one per recipient.
+ *
+ * IMPORTANT: `FROM` above is Resend's sandbox sender, which only actually
+ * delivers to the Resend account owner's own verified address until a
+ * custom domain is verified (Resend dashboard → Domains). Until then, this
+ * function will report per-recipient failures for everyone except that one
+ * address — it's wired up correctly, but not yet capable of a real blast.
+ */
+export async function sendAnnouncementBroadcast(
+  recipients: string[],
+  subject: string,
+  message: string
+): Promise<{ sent: number; failed: number }> {
+  const html = `<p>${message.replace(/\n/g, "<br/>")}</p>`;
+  let sent = 0;
+  let failed = 0;
+
+  for (let i = 0; i < recipients.length; i += 100) {
+    const batch = recipients.slice(i, i + 100);
+    // batchValidation: "permissive" — default "strict" fails the whole batch
+    // atomically on a single bad recipient, which would hide every other
+    // real send behind one sandbox-blocked address.
+    const { data, error } = await resend().batch.send(
+      batch.map((to) => ({ from: FROM, to, subject, html })),
+      { batchValidation: "permissive" }
+    );
+    if (error) {
+      failed += batch.length;
+      continue;
+    }
+    const errorCount = data?.errors?.length ?? 0;
+    sent += batch.length - errorCount;
+    failed += errorCount;
+  }
+
+  return { sent, failed };
 }

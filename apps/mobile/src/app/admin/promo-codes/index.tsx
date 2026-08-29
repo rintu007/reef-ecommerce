@@ -2,8 +2,10 @@ import {
   createPromoCode,
   deletePromoCode,
   listAdminPromoCodes,
+  listPromoCodeRedemptions,
   updatePromoCode,
   type PromoCode,
+  type PromoCodeRedemption,
   type PromoType,
 } from "@reef-market/shared";
 import { Stack, useRouter } from "expo-router";
@@ -41,6 +43,9 @@ function PromoCodesContent() {
   const [codes, setCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [redemptions, setRedemptions] = useState<PromoCodeRedemption[]>([]);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -143,6 +148,23 @@ function PromoCodesContent() {
       notify("Failed to delete", err instanceof Error ? err.message : undefined);
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function toggleRedemptions(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    setRedemptionsLoading(true);
+    try {
+      const { redemptions } = await listPromoCodeRedemptions(apiClient, id);
+      setRedemptions(redemptions);
+    } catch (err) {
+      notify("Failed to load redemptions", err instanceof Error ? err.message : undefined);
+    } finally {
+      setRedemptionsLoading(false);
     }
   }
 
@@ -272,9 +294,11 @@ function PromoCodesContent() {
                     {PROMO_TYPES.find((t) => t.value === p.type)?.label}
                     {p.type === "bonus_listings" && ` · ${p.bonus_listings} slots`}
                   </Text>
-                  <Text className="text-xs text-muted-foreground mt-1">
-                    {p.uses}/{p.max_uses} used{p.expires_at ? ` · expires ${p.expires_at}` : ""}
-                  </Text>
+                  <Pressable onPress={() => toggleRedemptions(p.id)}>
+                    <Text className="text-xs text-muted-foreground mt-1 underline">
+                      {p.uses}/{p.max_uses} used{p.expires_at ? ` · expires ${p.expires_at}` : ""}
+                    </Text>
+                  </Pressable>
                   {p.notes && <Text className="text-xs text-muted-foreground mt-1">{p.notes}</Text>}
                 </View>
               </View>
@@ -293,6 +317,24 @@ function PromoCodesContent() {
                   )}
                 </Pressable>
               </View>
+
+              {expandedId === p.id && (
+                <View className="mt-3 pt-3 border-t border-border gap-1.5">
+                  <Text className="text-xs font-semibold text-muted-foreground">Redemptions</Text>
+                  {redemptionsLoading ? (
+                    <ActivityIndicator size="small" color={themeColors.primary} />
+                  ) : redemptions.length === 0 ? (
+                    <Text className="text-xs text-muted-foreground">No one has redeemed this code yet.</Text>
+                  ) : (
+                    redemptions.map((r) => (
+                      <View key={r.id} className="flex-row items-center justify-between">
+                        <Text className="text-xs text-foreground">{r.user_display_name || r.user_email || r.user_id}</Text>
+                        <Text className="text-xs text-muted-foreground">{new Date(r.redeemed_at).toLocaleDateString()}</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
           ))}
         </View>

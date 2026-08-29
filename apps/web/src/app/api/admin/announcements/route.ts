@@ -3,6 +3,7 @@ import { announcementCreateSchema } from "@reef-market/shared";
 import { requireAdmin } from "@/lib/server/auth";
 import { handleRouteError } from "@/lib/server/http";
 import { createAnnouncement, listAdminAnnouncements } from "@/lib/server/announcements";
+import { logAdminAction } from "@/lib/server/admin-log";
 
 export async function GET(request: Request) {
   try {
@@ -20,9 +21,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
+    const admin = await requireAdmin(request);
     const input = announcementCreateSchema.parse(await request.json());
     const announcement = await createAnnouncement(input);
+    await logAdminAction(admin.id, "create_announcement", "announcement", announcement.id, { subject: input.subject });
     return NextResponse.json({ announcement }, { status: 201 });
   } catch (error) {
     return handleRouteError(error);

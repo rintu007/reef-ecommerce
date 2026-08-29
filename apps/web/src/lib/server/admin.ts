@@ -1,4 +1,10 @@
-import type { AdminAnalytics, AdminStats, Profile, Report, ReportStatus, UserRole } from "@reef-market/shared";
+import type { AdminAnalytics, AdminStats, Listing, Order, Profile, Report, ReportStatus, UserRole, VisitorLog } from "@reef-market/shared";
+import type { AuthUser } from "./auth";
+import { queryListings } from "./listings";
+import { listAllBlockedUsers, type AdminBlockedUser } from "./moderation";
+import { listOrdersForUser } from "./orders";
+import { listAdminReviews, type AdminReview } from "./reviews";
+import { getOwnSubscription, type OwnSubscriptionResult } from "./subscriptions";
 import { supabaseAdmin } from "./supabase-admin";
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -104,6 +110,7 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
           pending: Number(revenue?.revenue_pending ?? 0),
           cancelled: Number(revenue?.revenue_cancelled ?? 0),
         },
+        platformFee: Number(revenue?.platform_fee_completed ?? 0),
       },
     },
     listings: {
@@ -179,6 +186,14 @@ export async function banUser(userId: string): Promise<Profile> {
   return data as Profile;
 }
 
+/** Fine-grained permissions for which sensitive/money-moving admin actions a given admin account can perform — separate concern from banning a regular user. */
+export async function updateAdminPermissions(userId: string, permissions: string[]): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { data, error } = await db.from("profiles").update({ admin_permissions: permissions }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
 export async function unbanUser(userId: string): Promise<Profile> {
   const db = supabaseAdmin();
   const { error: authError } = await db.auth.admin.updateUserById(userId, { ban_duration: "none" });
@@ -228,6 +243,8 @@ export interface AdminReport extends Report {
 
 export interface AdminReportListParams {
   status?: ReportStatus;
+  /** Reports this one user filed or was named in — either side. */
+  userId?: string;
   limit?: number;
   offset?: number;
 }
@@ -236,6 +253,7 @@ export async function listAdminReports(params: AdminReportListParams): Promise<{
   const db = supabaseAdmin();
   let query = db.from("reports").select("*", { count: "exact" });
   if (params.status) query = query.eq("status", params.status);
+  if (params.userId) query = query.or(`reporter_id.eq.${params.userId},reported_id.eq.${params.userId}`);
 
   const limit = Math.min(params.limit ?? 50, 200);
   const offset = Math.max(params.offset ?? 0, 0);
@@ -270,9 +288,84 @@ export async function listAdminReports(params: AdminReportListParams): Promise<{
   };
 }
 
+export interface AdminUserDetail {
+  profile: Profile;
+  listings: Listing[];
+  ordersAsBuyer: Order[];
+  ordersAsSeller: Order[];
+  subscription: OwnSubscriptionResult;
+  reviews: AdminReview[];
+  reports: AdminReport[];
+  blockedRelationships: AdminBlockedUser[];
+}
+
+/**
+ * "Why can't this user see X" support debugging meant either trusting the
+ * user's own description or reaching for a direct DB query — no read-only
+ * way to see what a support agent needs about one account in one place.
+ * Deliberately a read-only aggregate (not session impersonation): every
+ * piece here is an admin-authorized read of data the user already owns,
+ * so there is no new mutation surface to guard.
+ */
+export async function getAdminUserDetail(userId: string, viewer: AuthUser): Promise<AdminUserDetail> {
+  const db = supabaseAdmin();
+  const { data: profile, error } = await db.from("profiles").select("*").eq("id", userId).single();
+  if (error) throw error;
+
+  const [listingsResult, ordersAsBuyer, ordersAsSeller, subscription, reviewsResult, reportsResult, blockedResult] = await Promise.all([
+    queryListings({ sellerId: userId, limit: 100 }, viewer),
+    listOrdersForUser(userId, "buyer"),
+    listOrdersForUser(userId, "seller"),
+    getOwnSubscription(userId),
+    listAdminReviews({ userId, limit: 100 }),
+    listAdminReports({ userId, limit: 100 }),
+    listAllBlockedUsers({ userId, limit: 100 }),
+  ]);
+
+  return {
+    profile: profile as Profile,
+    listings: listingsResult.listings,
+    ordersAsBuyer,
+    ordersAsSeller,
+    subscription,
+    reviews: reviewsResult.reviews,
+    reports: reportsResult.reports,
+    blockedRelationships: blockedResult.blockedUsers,
+  };
+}
+
 export async function updateReportStatus(id: string, status: ReportStatus): Promise<Report> {
   const db = supabaseAdmin();
   const { data, error } = await db.from("reports").update({ status }).eq("id", id).select().single();
   if (error) throw error;
   return data as Report;
+}
+
+export interface VisitorLogListParams {
+  sessionId?: string;
+  userEmail?: string;
+  guestsOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+/** Raw session-level rows — App Analytics only ever shows aggregates (totals, top pages, visits-by-day), with no way to inspect what one specific session or user actually did. */
+export async function listAdminVisitorLogs(params: VisitorLogListParams): Promise<{ logs: VisitorLog[]; total: number }> {
+  const db = supabaseAdmin();
+  let query = db.from("visitor_logs").select("*", { count: "exact" });
+
+  if (params.sessionId) query = query.eq("session_id", params.sessionId);
+  if (params.userEmail) {
+    const term = params.userEmail.replace(/[%_]/g, "\\$&");
+    query = query.ilike("user_email", `%${term}%`);
+  }
+  if (params.guestsOnly) query = query.eq("is_guest", true);
+
+  const limit = Math.min(params.limit ?? 100, 500);
+  const offset = Math.max(params.offset ?? 0, 0);
+  query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { logs: (data ?? []) as VisitorLog[], total: count ?? data?.length ?? 0 };
 }

@@ -5,6 +5,7 @@ import {
   toCents,
   type CartCheckoutItemResult,
   type CheckoutInput,
+  type DoaClaimReviewStatus,
   type FileDoaClaimInput,
   type Order,
   type ShipOrderInput,
@@ -89,6 +90,7 @@ export async function createCheckoutIntent(
       listing_photo: listing.photos[0] ?? null,
       price: listing.price,
       total_charged: fromCents(breakdown.totalChargedCents),
+      platform_fee: fromCents(breakdown.platformFeeCents + breakdown.featuredFeeCents),
       quantity: input.quantity,
       shipping_method: input.shipping_method,
       status: "pending",
@@ -495,6 +497,51 @@ export async function listAllOrders(limit = 100): Promise<Order[]> {
   const { data, error } = await db.from("orders").select("*").order("created_at", { ascending: false }).limit(limit);
   if (error) throw error;
   return (data ?? []) as Order[];
+}
+
+export interface AdminDoaClaim extends Order {
+  buyer: { id: string; display_name: string | null; email: string } | null;
+  seller: { id: string; display_name: string | null; email: string } | null;
+}
+
+export interface DoaClaimListParams {
+  status?: DoaClaimReviewStatus;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * A dedicated queue for DOA claims, the way Reports has one — previously an
+ * admin had to already know which order had a pending claim (only a small
+ * badge in the flat Orders list hinted at it).
+ */
+export async function listDoaClaims(params: DoaClaimListParams): Promise<{ claims: AdminDoaClaim[]; total: number }> {
+  const db = supabaseAdmin();
+  let query = db.from("orders").select("*", { count: "exact" }).not("doa_claim_status", "is", null);
+  if (params.status) query = query.eq("doa_claim_status", params.status);
+
+  const limit = Math.min(params.limit ?? 50, 200);
+  const offset = Math.max(params.offset ?? 0, 0);
+  query = query.order("doa_claim_filed_at", { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data: orders, error, count } = await query;
+  if (error) throw error;
+  if (!orders || orders.length === 0) return { claims: [], total: count ?? 0 };
+
+  const profileIds = [...new Set(orders.flatMap((o) => [o.buyer_id, o.seller_id]).filter(Boolean))] as string[];
+  const { data: profiles } = profileIds.length
+    ? await db.from("profiles").select("id, display_name, email").in("id", profileIds)
+    : { data: [] as { id: string; display_name: string | null; email: string }[] };
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return {
+    claims: orders.map((o) => ({
+      ...(o as Order),
+      buyer: profileMap.get(o.buyer_id) ?? null,
+      seller: profileMap.get(o.seller_id) ?? null,
+    })),
+    total: count ?? orders.length,
+  };
 }
 
 export async function getOrderById(id: string, viewer: AuthUser): Promise<Order | null> {

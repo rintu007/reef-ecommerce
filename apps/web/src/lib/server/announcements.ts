@@ -1,7 +1,8 @@
 import type { Announcement, AnnouncementCreateInput, AnnouncementUpdateInput } from "@reef-market/shared";
 import type { AuthUser } from "./auth";
+import { sendAnnouncementBroadcast } from "./email";
+import { AppError } from "./http";
 import { supabaseAdmin } from "./supabase-admin";
-import { sendBroadcastEmail } from "./email";
 
 /** Most recent active announcement visible to this viewer, or null. No per-user view-cap tracking table exists — max_views is enforced client-side via local storage. */
 export async function getActiveAnnouncement(viewer: AuthUser | null): Promise<Announcement | null> {
@@ -64,31 +65,68 @@ export interface BroadcastResult {
   emailsFailed: number;
 }
 
-/** Legacy parity: reef-trade-flow's admin "Broadcast Announcement" (sendBroadcastMessage) — an in-app popup, an email blast, or both. */
+/**
+ * Legacy parity: reef-trade-flow's admin "Broadcast Announcement" (sendBroadcastMessage)
+ * — an in-app popup, an email blast, or both, in one step. Shares the same
+ * `sendAnnouncementBroadcast` sender and `emailed_at` idempotency stamp as
+ * `sendAnnouncementEmail` below (the follow-up "email this existing
+ * announcement" action) so the two entry points can't double-email the same
+ * announcement.
+ */
 export async function broadcastAnnouncement(input: BroadcastInput): Promise<BroadcastResult> {
-  let popupCreated = false;
+  let popupId: string | null = null;
   if (input.sendPopup) {
-    await createAnnouncement({
+    const announcement = await createAnnouncement({
       subject: input.subject,
       message: input.message,
       is_active: true,
       max_views: input.maxViews,
       show_to_guests: input.showToGuests,
     });
-    popupCreated = true;
+    popupId = announcement.id;
   }
 
   let emailsSent = 0;
   let emailsFailed = 0;
   if (input.sendEmail) {
     const db = supabaseAdmin();
-    const { data: profiles, error } = await db.from("profiles").select("email");
+    const { data: profiles, error } = await db.from("profiles").select("email").not("email", "is", null);
     if (error) throw error;
-    const emails = (profiles ?? []).map((p) => p.email).filter(Boolean) as string[];
-    const result = await sendBroadcastEmail(emails, input.subject, input.message);
+    const emails = (profiles ?? []).map((p) => p.email).filter((e): e is string => !!e);
+    const result = await sendAnnouncementBroadcast(emails, input.subject, input.message);
     emailsSent = result.sent;
     emailsFailed = result.failed;
+
+    if (popupId) {
+      const { error: stampError } = await db.from("announcements").update({ emailed_at: new Date().toISOString() }).eq("id", popupId);
+      if (stampError) throw stampError;
+    }
   }
 
-  return { popupCreated, emailsSent, emailsFailed };
+  return { popupCreated: !!popupId, emailsSent, emailsFailed };
+}
+
+/** Legacy parity: broadcasting an already-existing announcement by email, not just the in-app popup. One-shot — repeat calls after the first success are rejected so a re-click can't double-email everyone. */
+export async function sendAnnouncementEmail(id: string): Promise<{ sent: number; failed: number }> {
+  const db = supabaseAdmin();
+
+  const { data: announcement, error: fetchError } = await db
+    .from("announcements")
+    .select("subject, message, emailed_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!announcement) throw new AppError("Announcement not found", 404);
+  if (announcement.emailed_at) throw new AppError("This announcement has already been emailed", 400);
+
+  const { data: profiles, error: profilesError } = await db.from("profiles").select("email").not("email", "is", null);
+  if (profilesError) throw profilesError;
+  const recipients = (profiles ?? []).map((p) => p.email).filter((e): e is string => !!e);
+
+  const result = await sendAnnouncementBroadcast(recipients, announcement.subject, announcement.message);
+
+  const { error: updateError } = await db.from("announcements").update({ emailed_at: new Date().toISOString() }).eq("id", id);
+  if (updateError) throw updateError;
+
+  return result;
 }

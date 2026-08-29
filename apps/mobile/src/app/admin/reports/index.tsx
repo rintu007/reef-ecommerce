@@ -1,10 +1,11 @@
-import { listAdminReports, updateReportStatus, type AdminReport, type ReportStatus } from "@reef-market/shared";
+import { getAdminConversation, listAdminReports, updateReportStatus, type AdminMessage, type AdminReport, type ReportStatus } from "@reef-market/shared";
 import { Link, Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
+import { markAdminBadgeSeen } from "@/components/admin/NewSinceBadge";
 import { notify } from "@/lib/alert";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
@@ -23,10 +24,18 @@ function ReportRow({
   report,
   busy,
   onSetStatus,
+  expanded,
+  conversation,
+  conversationLoading,
+  onToggleConversation,
 }: {
   report: AdminReport;
   busy: boolean;
   onSetStatus: (status: ReportStatus) => void;
+  expanded: boolean;
+  conversation: AdminMessage[];
+  conversationLoading: boolean;
+  onToggleConversation: () => void;
 }) {
   return (
     <View className="rounded-xl border border-border bg-card p-3">
@@ -46,6 +55,11 @@ function ReportRow({
           </Pressable>
         </Link>
       )}
+      {report.reported_id && (
+        <Pressable onPress={onToggleConversation} className="mt-1">
+          <Text className="text-xs text-primary">{expanded ? "Hide conversation" : "View conversation"}</Text>
+        </Pressable>
+      )}
       <View className="flex-row gap-4 mt-3">
         {report.status !== "resolved" && (
           <Pressable disabled={busy} onPress={() => onSetStatus("resolved")}>
@@ -62,6 +76,27 @@ function ReportRow({
           </Pressable>
         )}
       </View>
+
+      {expanded && (
+        <View className="mt-3 pt-3 border-t border-border gap-1.5">
+          <Text className="text-xs font-semibold text-muted-foreground">Conversation between reporter and reported user</Text>
+          {conversationLoading ? (
+            <Text className="text-xs text-muted-foreground">Loading…</Text>
+          ) : conversation.length === 0 ? (
+            <Text className="text-xs text-muted-foreground">No messages between these two users.</Text>
+          ) : (
+            conversation.map((m) => (
+              <View key={m.id}>
+                <Text className="text-xs">
+                  <Text className="font-semibold text-foreground">{m.sender_display_name ?? m.sender_email ?? m.sender_id}</Text>
+                  <Text className="text-muted-foreground"> · {new Date(m.created_at).toLocaleString()}</Text>
+                </Text>
+                <Text className="text-xs text-muted-foreground mt-0.5">{m.content}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -71,6 +106,9 @@ function AdminReportsContent() {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<AdminMessage[]>([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +128,13 @@ function AdminReportsContent() {
     return () => clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      listAdminReports(apiClient, { status: "pending", limit: 1 }).then(({ total }) => markAdminBadgeSeen("reports", total));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   async function setReportStatus(id: string, newStatus: ReportStatus) {
     setBusyId(id);
     try {
@@ -99,6 +144,24 @@ function AdminReportsContent() {
       notify("Error", err instanceof Error ? err.message : "Failed to update report");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function toggleConversation(report: AdminReport) {
+    if (expandedId === report.id) {
+      setExpandedId(null);
+      return;
+    }
+    if (!report.reported_id) return;
+    setExpandedId(report.id);
+    setConversationLoading(true);
+    try {
+      const { messages } = await getAdminConversation(apiClient, report.reporter_id, report.reported_id);
+      setConversation(messages);
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Failed to load conversation");
+    } finally {
+      setConversationLoading(false);
     }
   }
 
@@ -134,6 +197,10 @@ function AdminReportsContent() {
               report={report}
               busy={busyId === report.id}
               onSetStatus={(newStatus) => setReportStatus(report.id, newStatus)}
+              expanded={expandedId === report.id}
+              conversation={conversation}
+              conversationLoading={conversationLoading}
+              onToggleConversation={() => toggleConversation(report)}
             />
           ))}
         </View>

@@ -5,6 +5,7 @@ import { apiError, handleRouteError } from "@/lib/server/http";
 import { getListingById } from "@/lib/server/listings";
 import { geocodeLocation } from "@/lib/server/geocode";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
+import { logAdminAction } from "@/lib/server/admin-log";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -47,6 +48,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     const { data, error } = await db.from("listings").update(updatePayload).eq("id", id).select().single();
     if (error) throw error;
 
+    if (user.role === "admin" && existing.seller_id !== user.id) {
+      await logAdminAction(user.id, "update_listing", "listing", id, input);
+    }
+
     return NextResponse.json({ listing: data });
   } catch (error) {
     return handleRouteError(error);
@@ -73,6 +78,10 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     const { error } = await db.from("listings").delete().eq("id", id);
     if (error) throw error;
+
+    if (user.role === "admin" && existing.seller_id !== user.id) {
+      await logAdminAction(user.id, "delete_listing", "listing", id);
+    }
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

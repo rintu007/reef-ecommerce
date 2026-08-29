@@ -81,7 +81,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           )}
         </dl>
 
-        <OrderActions order={order} role={role} />
+        <OrderActions order={order} role={role} canManageFinances={user.adminPermissions.includes("manage_finances")} />
         {canReview && order.listing_id && <ReviewForm listingId={order.listing_id} />}
       </div>
     </div>

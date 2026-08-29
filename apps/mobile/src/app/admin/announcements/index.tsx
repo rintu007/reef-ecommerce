@@ -2,6 +2,7 @@ import {
   broadcastAnnouncement,
   deleteAnnouncement,
   listAdminAnnouncements,
+  sendAnnouncementEmail,
   updateAnnouncement,
   type Announcement,
   type BroadcastResult,
@@ -143,6 +144,25 @@ function AdminAnnouncementsContent() {
     }
   }
 
+  async function handleSendEmail(a: Announcement) {
+    const confirmed = await confirmAsync(
+      "Email all users?",
+      `Sends "${a.subject}" to every registered user. This can't be undone.`,
+      "Send"
+    );
+    if (!confirmed) return;
+    setBusyId(a.id);
+    try {
+      const result = await sendAnnouncementEmail(apiClient, a.id);
+      notify("Sent", `Sent to ${result.sent} recipient${result.sent === 1 ? "" : "s"}${result.failed ? ` (${result.failed} failed)` : ""}.`);
+      await load();
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Failed to send email");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const canSubmit =
     !submitting && subject.trim().length > 0 && message.trim().length > 0 && (!!editingId || sendPopup || sendEmail);
 
@@ -271,6 +291,7 @@ function AdminAnnouncementsContent() {
                   <Text className="text-sm text-muted-foreground mt-1">{a.message}</Text>
                   <Text className="text-xs text-muted-foreground mt-1">
                     max {a.max_views} view{a.max_views === 1 ? "" : "s"} · {a.show_to_guests ? "guests + members" : "members only"}
+                    {a.emailed_at && <> · emailed {new Date(a.emailed_at).toLocaleDateString()}</>}
                   </Text>
                 </View>
                 <View className="flex-row gap-4">
@@ -290,6 +311,15 @@ function AdminAnnouncementsContent() {
                     </Text>
                   </Pressable>
                 </View>
+                {a.emailed_at ? (
+                  <Text className="text-xs text-muted-foreground">Already emailed</Text>
+                ) : (
+                  <Pressable disabled={busy} onPress={() => handleSendEmail(a)}>
+                    <Text className="text-xs font-semibold text-emerald-600" style={busy ? { opacity: 0.5 } : undefined}>
+                      {busy ? "Sending…" : "Send Email to All Users"}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}

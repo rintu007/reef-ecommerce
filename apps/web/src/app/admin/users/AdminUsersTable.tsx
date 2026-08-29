@@ -3,12 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
+  ADMIN_PERMISSIONS,
   adminDeleteUser,
   banUser,
   getUserActivityStats,
   grantPromoToUser,
   listAdminUsers,
   sendMessage,
+  updateAdminPermissions,
   updateUserRole,
   type Profile,
   type UserActivityStats,
@@ -94,10 +96,15 @@ function UserRow({ user, currentUserId, onChanged }: { user: Profile; currentUse
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <Link href={`/sellers/${user.id}`} className="font-semibold text-sm hover:underline truncate block">
+          <Link href={`/admin/users/${user.id}`} className="font-semibold text-sm hover:underline truncate block">
             {user.display_name ?? "Unnamed"}
           </Link>
-          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          <p className="text-xs text-gray-500 truncate">
+            {user.email} ·{" "}
+            <Link href={`/sellers/${user.id}`} className="hover:underline">
+              storefront
+            </Link>
+          </p>
         </div>
         <span
           className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${
@@ -138,6 +145,34 @@ function UserRow({ user, currentUserId, onChanged }: { user: Profile; currentUse
                 >
                   User
                 </button>
+              </div>
+            </div>
+          )}
+
+          {!isBanned && user.role === "admin" && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold">Admin Permissions</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(ADMIN_PERMISSIONS).map(([key, meta]) => {
+                  const granted = user.admin_permissions.includes(key);
+                  const next = granted
+                    ? user.admin_permissions.filter((p) => p !== key)
+                    : [...user.admin_permissions, key];
+                  return (
+                    <button
+                      key={key}
+                      disabled={busy}
+                      title={meta.description}
+                      onClick={() => run(() => updateAdminPermissions(apiClient, user.id, next))}
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full disabled:opacity-40 ${
+                        granted ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {granted ? "✓ " : ""}
+                      {meta.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

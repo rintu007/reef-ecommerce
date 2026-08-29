@@ -7,6 +7,7 @@ import {
   type HelpCategory,
   type HelpContent,
   type HelpContentType,
+  type MarketType,
 } from "@reef-market/shared";
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -20,6 +21,11 @@ import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
 
 const CONTENT_TYPES: HelpContentType[] = ["article", "video", "tip", "faq"];
+const MARKETS: { value: MarketType; label: string }[] = [
+  { value: "both", label: "Both" },
+  { value: "saltwater", label: "Saltwater" },
+  { value: "freshwater", label: "Freshwater" },
+];
 
 const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground";
 
@@ -47,7 +53,9 @@ function AdminHelpContentContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<HelpCategory>(HELP_CATEGORIES[0].value);
+  const [categories, setCategories] = useState<HelpCategory[]>([]);
   const [contentType, setContentType] = useState<HelpContentType>("article");
+  const [market, setMarket] = useState<MarketType>("both");
   const [body, setBody] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [published, setPublished] = useState(true);
@@ -75,7 +83,9 @@ function AdminHelpContentContent() {
     setEditingId(null);
     setTitle("");
     setCategory(HELP_CATEGORIES[0].value);
+    setCategories([]);
     setContentType("article");
+    setMarket("both");
     setBody("");
     setYoutubeUrl("");
     setPublished(true);
@@ -86,33 +96,44 @@ function AdminHelpContentContent() {
     setEditingId(item.id);
     setTitle(item.title);
     setCategory(item.category);
+    setCategories(item.categories as HelpCategory[]);
     setContentType(item.content_type);
+    setMarket(item.market);
     setBody(item.body ?? "");
     setYoutubeUrl(item.youtube_url ?? "");
     setPublished(item.published);
     setError(null);
   }
 
+  function toggleExtraCategory(value: HelpCategory) {
+    setCategories((prev) => (prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value]));
+  }
+
   async function handleSubmit() {
     setError(null);
     setSubmitting(true);
+    const extraCategories = categories.filter((c) => c !== category);
     try {
       if (editingId) {
         await updateHelpContent(apiClient, editingId, {
           title,
           category,
+          categories: extraCategories,
           content_type: contentType,
-          body: body || null,
-          youtube_url: youtubeUrl || null,
+          market,
+          body: contentType === "video" ? null : body || null,
+          youtube_url: contentType === "video" ? youtubeUrl || null : null,
           published,
         });
       } else {
         await createHelpContent(apiClient, {
           title,
           category,
+          categories: extraCategories,
           content_type: contentType,
-          body: body || null,
-          youtube_url: youtubeUrl || null,
+          market,
+          body: contentType === "video" ? null : body || null,
+          youtube_url: contentType === "video" ? youtubeUrl || null : null,
           published: true,
         });
       }
@@ -185,6 +206,24 @@ function AdminHelpContentContent() {
               <Chip key={c.value} label={`${c.icon} ${c.label}`} active={category === c.value} onPress={() => setCategory(c.value)} />
             ))}
           </ScrollView>
+        </View>
+
+        <View>
+          <FieldLabel>Also show under (optional)</FieldLabel>
+          <View className="flex-row flex-wrap gap-1.5">
+            {HELP_CATEGORIES.filter((c) => c.value !== category).map((c) => (
+              <Chip key={c.value} label={`${c.icon} ${c.label}`} active={categories.includes(c.value)} onPress={() => toggleExtraCategory(c.value)} />
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <FieldLabel>Market</FieldLabel>
+          <View className="flex-row gap-2">
+            {MARKETS.map((m) => (
+              <Chip key={m.value} label={m.label} active={market === m.value} onPress={() => setMarket(m.value)} />
+            ))}
+          </View>
         </View>
 
         <View>
@@ -272,7 +311,8 @@ function AdminHelpContentContent() {
                     </Text>
                   </Text>
                   <Text className="text-xs text-muted-foreground mt-1">
-                    {HELP_CATEGORIES.find((c) => c.value === item.category)?.label} · {item.content_type}
+                    {HELP_CATEGORIES.find((c) => c.value === item.category)?.label}
+                    {item.categories.length > 0 && ` +${item.categories.length} more`} · {item.content_type} · {item.market}
                   </Text>
                   {item.body && (
                     <Text className="text-sm text-muted-foreground mt-1" numberOfLines={2}>

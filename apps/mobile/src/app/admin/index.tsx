@@ -5,24 +5,34 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
+import { NewSinceBadge } from "@/components/admin/NewSinceBadge";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
 
-const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => string }[] = [
+const SECTIONS: { href: string; title: string; describe: (s: AdminStats) => string; badge?: "reports" | "doa_claims" }[] = [
   {
     href: "/admin/listings",
     title: "Listings",
     describe: (s) => `${s.listings.total} total · ${s.listings.pending_approval} awaiting approval`,
   },
-  { href: "/admin/reports", title: "Reports", describe: (s) => `${s.reports.pending} pending triage` },
+  { href: "/admin/reports", title: "Reports", describe: (s) => `${s.reports.pending} pending triage`, badge: "reports" },
   { href: "/admin/users", title: "Users", describe: (s) => `${s.users.total} registered` },
   { href: "/admin/orders", title: "Orders", describe: (s) => `${s.orders.total} total · ${s.orders.doa_claim} refund/credit` },
+  { href: "/admin/doa-claims", title: "DOA Claims", describe: () => "Dead-on-arrival claims queue", badge: "doa_claims" },
+  { href: "/admin/services", title: "Services", describe: () => "Provider services — moderate & remove" },
+  { href: "/admin/reviews", title: "Reviews", describe: () => "Find and remove fake or abusive reviews" },
+  { href: "/admin/membership-plans", title: "Membership Plans", describe: () => "Pricing, listing limits & features" },
+  { href: "/admin/subscriptions", title: "Subscriptions", describe: () => "Which users hold which plan, and its status" },
+  { href: "/admin/blocked-users", title: "Blocked Users", describe: () => "Who has blocked whom" },
   { href: "/admin/announcements", title: "Announcements", describe: () => "Broadcast banner shown on app load" },
   { href: "/admin/help-content", title: "Learn Content", describe: () => "Care guides shown on the Learn tab" },
   { href: "/admin/promo-codes", title: "Promo Codes", describe: () => "Bonus listings & free membership grants" },
+  { href: "/admin/seller-payouts", title: "Seller Payouts", describe: () => "Stripe Connect onboarding & payout status" },
   { href: "/admin/sales-analytics", title: "Sales Analytics", describe: () => "Revenue, order status, and recent activity" },
   { href: "/admin/app-analytics", title: "App Analytics", describe: () => "Users, listings, reviews, and visitor stats" },
+  { href: "/admin/visitor-logs", title: "Visitor Logs", describe: () => "Raw page-view events by session or user" },
+  { href: "/admin/action-log", title: "Action Log", describe: () => "Every sensitive admin action, who and when" },
 ];
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -65,7 +75,10 @@ function AdminScreenContent() {
         {SECTIONS.map((section) => (
           <Link key={section.href} href={section.href as never} asChild>
             <Pressable className="rounded-xl border border-border bg-card p-4">
-              <Text className="font-semibold text-sm text-foreground">{section.title}</Text>
+              <View className="flex-row items-center">
+                <Text className="font-semibold text-sm text-foreground">{section.title}</Text>
+                {section.badge && <NewSinceBadge kind={section.badge} />}
+              </View>
               <Text className="text-xs text-muted-foreground mt-1">{section.describe(stats)}</Text>
             </Pressable>
           </Link>

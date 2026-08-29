@@ -50,3 +50,44 @@ export async function unblockUser(blockerId: string, blockedId: string): Promise
   const { error } = await db.from("blocked_users").delete().eq("blocker_id", blockerId).eq("blocked_id", blockedId);
   if (error) throw error;
 }
+
+export interface AdminBlockedUser extends BlockedUser {
+  blocker: { id: string; display_name: string | null; email: string } | null;
+  blocked: { id: string; display_name: string | null; email: string } | null;
+}
+
+export interface AdminBlockedUserListParams {
+  /** Blocks involving this one user, on either side (blocker or blocked). */
+  userId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** No admin visibility existed into who has blocked whom — useful the moment a dispute involves two users who've blocked each other. */
+export async function listAllBlockedUsers(params: AdminBlockedUserListParams = {}): Promise<{ blockedUsers: AdminBlockedUser[]; total: number }> {
+  const db = supabaseAdmin();
+  const limit = Math.min(params.limit ?? 100, 500);
+  const offset = Math.max(params.offset ?? 0, 0);
+
+  let query = db.from("blocked_users").select("*", { count: "exact" });
+  if (params.userId) query = query.or(`blocker_id.eq.${params.userId},blocked_id.eq.${params.userId}`);
+
+  const { data: rows, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) throw error;
+  if (!rows || rows.length === 0) return { blockedUsers: [], total: count ?? 0 };
+
+  const profileIds = [...new Set(rows.flatMap((r) => [r.blocker_id, r.blocked_id]))];
+  const { data: profiles } = await db.from("profiles").select("id, display_name, email").in("id", profileIds);
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return {
+    blockedUsers: rows.map((r) => ({
+      ...(r as BlockedUser),
+      blocker: profileMap.get(r.blocker_id) ?? null,
+      blocked: profileMap.get(r.blocked_id) ?? null,
+    })),
+    total: count ?? rows.length,
+  };
+}

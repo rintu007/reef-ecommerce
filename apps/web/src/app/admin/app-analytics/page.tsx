@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from "@/lib/server/auth";
 import { getAdminAnalytics } from "@/lib/server/admin";
 import { TopPagesList } from "@/components/admin/TopPagesList";
 import { VisitsByDayChart } from "@/components/admin/VisitsChart";
+import { CsvExportButton } from "@/components/admin/CsvExportButton";
+import { rowsToCsv } from "@/lib/csv";
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -20,9 +22,43 @@ export default async function AppAnalyticsPage() {
 
   const analytics = await getAdminAnalytics();
 
+  const csv = rowsToCsv([
+    ["Summary", ""],
+    ["Total Users", analytics.users.total],
+    ["Total Listings", analytics.listings.total],
+    ["Listings — Active", analytics.listings.active],
+    ["Listings — Sold", analytics.listings.sold],
+    ["Listings — Removed", analytics.listings.removed],
+    ["Total Orders", analytics.orders.total],
+    ["Orders — Completed", analytics.orders.completed],
+    ["Orders — Pending", analytics.orders.pending],
+    ["Total Reviews", analytics.reviews.total],
+    ["Avg Rating", analytics.reviews.avgRating != null ? analytics.reviews.avgRating.toFixed(2) : ""],
+    ["Total Page Views", analytics.visitors.total],
+    ["Unique Sessions", analytics.visitors.uniqueSessions],
+    ["Views Today", analytics.visitors.today],
+    ["Views Last 7 Days", analytics.visitors.last7Days],
+    ["Signed-In Sessions", analytics.visitors.authSessions],
+    ["Guest Sessions", analytics.visitors.guestSessions],
+    ["New Orders (30 days)", analytics.recentActivity.ordersLast30Days],
+    ["New Listings (30 days)", analytics.recentActivity.listingsLast30Days],
+    ["New Users (30 days)", analytics.recentActivity.usersLast30Days],
+    [],
+    ["Views per Day (last 30 days)", ""],
+    ["Date", "Views"],
+    ...analytics.visitors.visitsByDay.map((d) => [d.date, d.count]),
+    [],
+    ["Top Pages", ""],
+    ["Path", "Views"],
+    ...analytics.visitors.topPages.map((p) => [p.path, p.count]),
+  ]);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">App Analytics</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">App Analytics</h1>
+        <CsvExportButton filename="app-analytics.csv" csv={csv} />
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Users" value={String(analytics.users.total)} />
