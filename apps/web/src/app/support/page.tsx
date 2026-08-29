@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { submitSupportMessage, ApiError, type SupportMessageInput } from "@reef-market/shared";
+import { apiClient } from "@/lib/api-client";
 
 const FAQS = [
   {
@@ -50,6 +52,114 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+/** Legacy parity: reef-trade-flow's Support page "Send Us a Message" contact form — this had been dropped, leaving only FAQ + static contact info. */
+function ContactForm() {
+  const [form, setForm] = useState<SupportMessageInput>({ name: "", email: "", type: "question", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!form.name || !form.email || !form.message) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await submitSupportMessage(apiClient, form);
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to send your message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-8 text-center space-y-3">
+        <p className="text-3xl">✅</p>
+        <p className="font-semibold text-gray-900">Message Sent!</p>
+        <p className="text-sm text-gray-500">We&apos;ll get back to you at {form.email} as soon as possible.</p>
+        <button
+          onClick={() => {
+            setSubmitted(false);
+            setForm({ name: "", email: "", type: "question", message: "" });
+          }}
+          className="text-blue-700 text-sm hover:underline"
+        >
+          Send another message
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <h2 className="font-semibold text-gray-900">Send Us a Message</h2>
+      </div>
+      <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-700">Your Name *</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Jane Smith"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-700">Email Address *</label>
+            <input
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="you@email.com"
+            />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-700">Type</label>
+          <select
+            value={form.type}
+            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SupportMessageInput["type"] }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+          >
+            <option value="question">Question</option>
+            <option value="feedback">Feedback</option>
+            <option value="bug">Report a Bug</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-700">Message *</label>
+          <textarea
+            required
+            rows={4}
+            value={form.message}
+            onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            placeholder="Describe your question or feedback…"
+          />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading || !form.name || !form.email || !form.message}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl py-2.5 text-sm"
+        >
+          {loading ? "Sending…" : "Send Message"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function SupportPage() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,6 +190,8 @@ export default function SupportPage() {
             </div>
           </div>
         </div>
+
+        <ContactForm />
 
         <div className="bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4 space-y-2">
           <p className="font-semibold text-sm text-blue-900">Tips for faster support</p>

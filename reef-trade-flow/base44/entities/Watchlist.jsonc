@@ -1,0 +1,43 @@
+{
+  "name": "Watchlist",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who created the watchlist entry"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "listing",
+        "keyword"
+      ],
+      "description": "Whether this is a saved listing or keyword alert"
+    },
+    "listing_id": {
+      "type": "string",
+      "description": "ID of saved listing (for type='listing')"
+    },
+    "keyword": {
+      "type": "string",
+      "description": "Keyword to watch for (for type='keyword')"
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "saltwater",
+        "freshwater"
+      ],
+      "description": "Market filter for keyword alerts (optional)"
+    },
+    "notify_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to send notifications for this watchlist entry"
+    }
+  },
+  "required": [
+    "user_email",
+    "type"
+  ]
+}

@@ -1,16 +1,247 @@
-import { listAdminUsers, updateUserRole, type Profile, type UserRole } from "@reef-market/shared";
+import {
+  adminDeleteUser,
+  banUser,
+  getUserActivityStats,
+  grantPromoToUser,
+  listAdminUsers,
+  sendMessage,
+  updateUserRole,
+  type Profile,
+  type UserActivityStats,
+} from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, Stack, useRouter } from "expo-router";
-import { ArrowLeft, Search } from "lucide-react-native";
+import { ArrowLeft, ChevronDown, ChevronUp, Search } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { apiClient } from "@/lib/api-client";
-import { notify } from "@/lib/alert";
+import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
+
+/** Legacy parity: reef-trade-flow's admin UserManagementTab per-user stats panel. */
+function UserStatsPanel({ userId }: { userId: string }) {
+  const [stats, setStats] = useState<UserActivityStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getUserActivityStats(apiClient, userId)
+      .then((s) => {
+        if (!cancelled) setStats(s);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  if (loading) return <Text className="text-xs text-muted-foreground py-2">Loading stats…</Text>;
+  if (!stats) return null;
+
+  const cards = [
+    { label: "Purchases", value: String(stats.totalPurchases), sub: `$${stats.totalSpent.toFixed(2)} spent` },
+    { label: "Sales", value: String(stats.totalSales), sub: `$${stats.totalRevenue.toFixed(2)} earned` },
+    { label: "Listings", value: `${stats.activeListings} active`, sub: `${stats.totalListings} total` },
+    { label: "Last Active", value: stats.lastActive ? new Date(stats.lastActive).toLocaleDateString() : "No activity", sub: "" },
+  ];
+
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      {cards.map((c) => (
+        <View key={c.label} className="bg-background rounded-lg p-2.5" style={{ width: "48%" }}>
+          <Text className="text-[10px] text-muted-foreground">{c.label}</Text>
+          <Text className="text-sm font-bold text-foreground">{c.value}</Text>
+          {!!c.sub && <Text className="text-[10px] text-muted-foreground">{c.sub}</Text>}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function UserRow({ user, currentUserId, onChanged }: { user: Profile; currentUserId?: string; onChanged: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [messageText, setMessageText] = useState("");
+  const [showMessage, setShowMessage] = useState(false);
+
+  const isSelf = user.id === currentUserId;
+  const isBanned = !!user.banned_at;
+
+  async function run(fn: () => Promise<unknown>) {
+    setBusy(true);
+    try {
+      await fn();
+      onChanged();
+    } catch (err) {
+      notify("Error", err instanceof Error ? err.message : "Action failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = await confirmAsync("Delete this account?", "This can't be undone.", "Delete");
+    if (confirmed) run(() => adminDeleteUser(apiClient, user.id));
+  }
+
+  return (
+    <View className={`rounded-xl border bg-card overflow-hidden ${isBanned ? "border-destructive/50" : "border-border"}`}>
+      <Pressable onPress={() => setExpanded((e) => !e)} className="flex-row items-center gap-3 p-3">
+        <View className="w-9 h-9 rounded-full overflow-hidden bg-muted items-center justify-center shrink-0">
+          {user.avatar_url ? (
+            <Image source={{ uri: user.avatar_url }} style={{ width: 36, height: 36 }} contentFit="cover" />
+          ) : (
+            <Text className="text-sm">👤</Text>
+          )}
+        </View>
+        <View className="flex-1 min-w-0">
+          <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
+            {user.display_name ?? "Unnamed"}
+          </Text>
+          <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+            {user.email}
+          </Text>
+        </View>
+        <View className={`px-2 py-1 rounded-full shrink-0 ${isBanned ? "bg-destructive/15" : user.role === "admin" ? "bg-primary" : "bg-muted"}`}>
+          <Text
+            className={`text-[10px] font-semibold ${isBanned ? "text-destructive" : user.role === "admin" ? "text-white" : "text-muted-foreground"}`}
+          >
+            {isBanned ? "blocked" : user.role}
+          </Text>
+        </View>
+        {expanded ? (
+          <ChevronUp size={16} color={themeColors.mutedForeground} />
+        ) : (
+          <ChevronDown size={16} color={themeColors.mutedForeground} />
+        )}
+      </Pressable>
+
+      {expanded && (
+        <View className="border-t border-border bg-muted/30 p-3 gap-3">
+          <View>
+            <Text className="text-xs font-semibold text-foreground mb-1.5">Activity Stats</Text>
+            <UserStatsPanel userId={user.id} />
+          </View>
+
+          {!isBanned && !isSelf && (
+            <View className="gap-1.5">
+              <Text className="text-xs font-semibold text-foreground">Role</Text>
+              <View className="flex-row gap-2">
+                <Pressable
+                  disabled={busy}
+                  onPress={() => run(() => updateUserRole(apiClient, user.id, "admin"))}
+                  className={`flex-1 h-8 rounded-lg items-center justify-center border ${user.role === "admin" ? "bg-foreground border-foreground" : "border-border"}`}
+                >
+                  <Text className={`text-xs font-semibold ${user.role === "admin" ? "text-background" : "text-foreground"}`}>Admin</Text>
+                </Pressable>
+                <Pressable
+                  disabled={busy}
+                  onPress={() => run(() => updateUserRole(apiClient, user.id, "user"))}
+                  className={`flex-1 h-8 rounded-lg items-center justify-center border ${user.role === "user" ? "bg-foreground border-foreground" : "border-border"}`}
+                >
+                  <Text className={`text-xs font-semibold ${user.role === "user" ? "text-background" : "text-foreground"}`}>User</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {!isBanned && (
+            <View className="gap-1.5">
+              <Text className="text-xs font-semibold text-foreground">Apply Promo Code</Text>
+              <View className="flex-row gap-2">
+                <TextInput
+                  value={promoCode}
+                  onChangeText={(v) => setPromoCode(v.toUpperCase())}
+                  placeholder="e.g. REEF2024"
+                  placeholderTextColor={themeColors.mutedForeground}
+                  autoCapitalize="characters"
+                  className="flex-1 h-8 rounded-lg border border-border bg-card px-2 text-xs text-foreground"
+                />
+                <Pressable
+                  disabled={busy || !promoCode.trim()}
+                  onPress={() => run(() => grantPromoToUser(apiClient, user.id, promoCode.trim())).then(() => setPromoCode(""))}
+                  className="h-8 rounded-lg px-3 items-center justify-center bg-primary"
+                  style={{ opacity: busy || !promoCode.trim() ? 0.4 : 1 }}
+                >
+                  <Text className="text-xs font-semibold text-white">Apply</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {!isSelf && (
+            <View className="gap-2 pt-2 border-t border-border">
+              <Text className="text-xs font-semibold text-destructive">Moderation</Text>
+              <View className="flex-row gap-2">
+                <Pressable
+                  disabled={busy}
+                  onPress={() => run(() => banUser(apiClient, user.id, !isBanned))}
+                  className={`flex-1 h-8 rounded-lg items-center justify-center border ${isBanned ? "border-emerald-500" : "border-destructive"}`}
+                >
+                  <Text className={`text-xs font-semibold ${isBanned ? "text-emerald-600" : "text-destructive"}`}>
+                    {isBanned ? "Unblock" : "Block User"}
+                  </Text>
+                </Pressable>
+                <Pressable disabled={busy} onPress={handleDelete} className="h-8 rounded-lg px-3 items-center justify-center border border-destructive">
+                  <Text className="text-xs font-semibold text-destructive">Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {!isSelf && (
+            <View className="gap-1.5">
+              <Pressable onPress={() => setShowMessage((s) => !s)}>
+                <Text className="text-xs font-semibold text-primary">{showMessage ? "Cancel" : "Send In-App Message"}</Text>
+              </Pressable>
+              {showMessage && (
+                <View className="gap-2">
+                  <TextInput
+                    value={messageText}
+                    onChangeText={setMessageText}
+                    placeholder="Type your message…"
+                    placeholderTextColor={themeColors.mutedForeground}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                    className="rounded-lg border border-border bg-card px-2.5 py-2 text-sm text-foreground"
+                    style={{ minHeight: 70 }}
+                  />
+                  <Pressable
+                    disabled={busy || !messageText.trim()}
+                    onPress={() =>
+                      run(() => sendMessage(apiClient, { recipient_id: user.id, content: messageText.trim() })).then(() => {
+                        setMessageText("");
+                        setShowMessage(false);
+                      })
+                    }
+                    className="h-8 rounded-lg items-center justify-center bg-primary"
+                    style={{ opacity: busy || !messageText.trim() ? 0.4 : 1 }}
+                  >
+                    <Text className="text-xs font-semibold text-white">Send Message</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
+
+          <Link href={`/sellers/${user.id}`} asChild>
+            <Pressable>
+              <Text className="text-xs font-semibold text-primary">View storefront →</Text>
+            </Pressable>
+          </Link>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function AdminUsersContent() {
   const { session } = useAuth();
@@ -19,7 +250,6 @@ function AdminUsersContent() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async (search: string) => {
     setLoading(true);
@@ -32,30 +262,31 @@ function AdminUsersContent() {
     }
   }, []);
 
-  // Debounced on typing (immediate on mount/empty query), mirroring both
-  // apps/web/src/app/admin/users/AdminUsersTable.tsx's 300ms debounce and this
-  // app's own search-list convention in (tabs)/browse.tsx.
   useEffect(() => {
     const timer = setTimeout(() => load(q), q ? 300 : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  async function toggleAdmin(user: Profile) {
-    const nextRole: UserRole = user.role === "admin" ? "user" : "admin";
-    setBusyId(user.id);
-    try {
-      await updateUserRole(apiClient, user.id, nextRole);
-      await load(q);
-    } catch (err) {
-      notify("Error", err instanceof Error ? err.message : "Failed to update role");
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const adminCount = users.filter((u) => u.role === "admin").length;
+  const blockedCount = users.filter((u) => u.banned_at).length;
 
   return (
     <View className="flex-1">
+      <View className="flex-row px-4 pt-3 gap-2">
+        {[
+          { label: "Total", value: total },
+          { label: "Users", value: users.length - adminCount - blockedCount },
+          { label: "Admins", value: adminCount },
+          { label: "Blocked", value: blockedCount },
+        ].map((s) => (
+          <View key={s.label} className="flex-1 bg-card border border-border rounded-xl p-2 items-center">
+            <Text className="text-lg font-extrabold text-foreground">{s.value}</Text>
+            <Text className="text-[9px] text-muted-foreground">{s.label}</Text>
+          </View>
+        ))}
+      </View>
+
       <View className="flex-row items-center gap-2 bg-muted rounded-xl px-3 h-10 mx-4 mt-3 mb-1">
         <Search size={16} color={themeColors.mutedForeground} />
         <TextInput
@@ -86,41 +317,7 @@ function AdminUsersContent() {
               <Text className="text-muted-foreground text-center">No users found.</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const isBusy = busyId === item.id;
-            const isSelf = item.id === currentUserId;
-            return (
-              <View className="flex-row items-center gap-3 rounded-xl border border-border bg-card p-3">
-                <View className="w-9 h-9 rounded-full overflow-hidden bg-muted items-center justify-center shrink-0">
-                  {item.avatar_url ? (
-                    <Image source={{ uri: item.avatar_url }} style={{ width: 36, height: 36 }} contentFit="cover" />
-                  ) : (
-                    <Text className="text-sm">👤</Text>
-                  )}
-                </View>
-                <Link href={`/sellers/${item.id}`} asChild>
-                  <Pressable className="flex-1 min-w-0">
-                    <Text className="font-semibold text-sm text-foreground" numberOfLines={1}>
-                      {item.display_name ?? "Unnamed"}
-                    </Text>
-                    <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                      {item.email}
-                    </Text>
-                  </Pressable>
-                </Link>
-                <View className={`px-2 py-1 rounded-full shrink-0 ${item.role === "admin" ? "bg-primary" : "bg-muted"}`}>
-                  <Text className={`text-[10px] font-semibold ${item.role === "admin" ? "text-white" : "text-muted-foreground"}`}>
-                    {item.role}
-                  </Text>
-                </View>
-                <Pressable onPress={() => toggleAdmin(item)} disabled={isBusy || isSelf} className="shrink-0">
-                  <Text className="text-xs font-semibold text-primary" style={{ opacity: isBusy || isSelf ? 0.4 : 1 }}>
-                    {item.role === "admin" ? "Revoke admin" : "Make admin"}
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          }}
+          renderItem={({ item }) => <UserRow user={item} currentUserId={currentUserId} onChanged={() => load(q)} />}
         />
       )}
     </View>

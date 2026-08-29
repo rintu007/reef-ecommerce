@@ -164,6 +164,62 @@ export async function updateUserRole(userId: string, role: UserRole): Promise<Pr
   return data as Profile;
 }
 
+/**
+ * Legacy parity: reef-trade-flow's admin UserManagementTab could block a
+ * user outright. Uses Supabase's own auth ban (actually prevents sign-in,
+ * unlike a cosmetic role flag) — `banned_at` on profiles is just a fast,
+ * queryable mirror of that for the admin list/filter UI.
+ */
+export async function banUser(userId: string): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { error: authError } = await db.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
+  if (authError) throw authError;
+  const { data, error } = await db.from("profiles").update({ banned_at: new Date().toISOString() }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
+export async function unbanUser(userId: string): Promise<Profile> {
+  const db = supabaseAdmin();
+  const { error: authError } = await db.auth.admin.updateUserById(userId, { ban_duration: "none" });
+  if (authError) throw authError;
+  const { data, error } = await db.from("profiles").update({ banned_at: null }).eq("id", userId).select().single();
+  if (error) throw error;
+  return data as Profile;
+}
+
+export interface UserActivityStats {
+  totalPurchases: number;
+  totalSpent: number;
+  totalSales: number;
+  totalRevenue: number;
+  activeListings: number;
+  totalListings: number;
+  lastActive: string | null;
+}
+
+/** Legacy parity: reef-trade-flow's per-user stats panel in admin user management. */
+export async function getUserActivityStats(userId: string): Promise<UserActivityStats> {
+  const db = supabaseAdmin();
+  const [{ data: purchases }, { data: sales }, { count: activeListings }, { count: totalListings }, authUser] = await Promise.all([
+    db.from("orders").select("total_charged").eq("buyer_id", userId).not("status", "in", "(pending,cancelled)"),
+    db.from("orders").select("total_charged").eq("seller_id", userId).not("status", "in", "(pending,cancelled)"),
+    db.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("status", "active"),
+    db.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", userId),
+    db.auth.admin.getUserById(userId),
+  ]);
+
+  return {
+    totalPurchases: purchases?.length ?? 0,
+    totalSpent: (purchases ?? []).reduce((sum, o) => sum + (o.total_charged ?? 0), 0),
+    totalSales: sales?.length ?? 0,
+    totalRevenue: (sales ?? []).reduce((sum, o) => sum + (o.total_charged ?? 0), 0),
+    activeListings: activeListings ?? 0,
+    totalListings: totalListings ?? 0,
+    lastActive: authUser.data.user?.last_sign_in_at ?? null,
+  };
+}
+
 export interface AdminReport extends Report {
   reporter: { id: string; display_name: string | null; email: string } | null;
   reported: { id: string; display_name: string | null; email: string } | null;

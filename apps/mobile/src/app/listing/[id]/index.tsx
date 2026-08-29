@@ -265,6 +265,16 @@ export default function ListingDetailScreen() {
                 <Text className="text-xs text-foreground">{listing.quantity} in stock</Text>
               </View>
             )}
+            {listing.min_qty > 1 && (
+              <View className="border border-amber-400 rounded-full px-2.5 py-1">
+                <Text className="text-xs text-amber-600">Min qty: {listing.min_qty}</Text>
+              </View>
+            )}
+            {listing.min_order_amount > 0 && (
+              <View className="border border-amber-400 rounded-full px-2.5 py-1">
+                <Text className="text-xs text-amber-600">Min order: ${listing.min_order_amount.toFixed(2)}</Text>
+              </View>
+            )}
           </View>
 
           <View className="h-px bg-border" />

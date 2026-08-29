@@ -1,0 +1,73 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "seller_agreed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has agreed to the seller terms"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "tank_photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bio": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "es",
+        "fr",
+        "de",
+        "it",
+        "pt",
+        "ja",
+        "zh"
+      ],
+      "default": "en",
+      "description": "Preferred language"
+    },
+    "country": {
+      "type": "string",
+      "description": "ISO country code e.g. US, GB, DE"
+    },
+    "verified_seller": {
+      "type": "boolean",
+      "default": false,
+      "description": "Granted automatically after 10 completed sales. Verified coral sellers get instant payout on tracking upload."
+    },
+    "completed_sales_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Total completed sales \u2014 used to determine verified status"
+    }
+  },
+  "required": [
+    "display_name",
+    "avatar_url",
+    "tank_photos",
+    "bio",
+    "location"
+  ]
+}

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createAnnouncement,
+  broadcastAnnouncement,
   deleteAnnouncement,
   listAdminAnnouncements,
   updateAnnouncement,
   type Announcement,
+  type BroadcastResult,
 } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 
@@ -15,12 +16,22 @@ export function AdminAnnouncementsTable() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // When set, the form below edits this announcement (PATCH) instead of
+  // broadcasting a new one — legacy parity: reef-trade-flow's admin panel
+  // could edit an existing announcement's subject/message/max_views/
+  // show_to_guests, which this app's admin UI had dropped (create+toggle+
+  // delete only).
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [maxViews, setMaxViews] = useState("1");
   const [showToGuests, setShowToGuests] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [sendPopup, setSendPopup] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [broadcastResult, setBroadcastResult] = useState<BroadcastResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,27 +48,56 @@ export function AdminAnnouncementsTable() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  async function handleCreate(event: React.FormEvent) {
+  function resetForm() {
+    setEditingId(null);
+    setSubject("");
+    setMessage("");
+    setMaxViews("1");
+    setShowToGuests(false);
+    setSendPopup(true);
+    setSendEmail(false);
+  }
+
+  function startEdit(a: Announcement) {
+    setEditingId(a.id);
+    setSubject(a.subject);
+    setMessage(a.message);
+    setMaxViews(String(a.max_views));
+    setShowToGuests(a.show_to_guests);
+    setBroadcastResult(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    setCreating(true);
+    setBroadcastResult(null);
+    setSubmitting(true);
     try {
-      await createAnnouncement(apiClient, {
-        subject,
-        message,
-        max_views: Number(maxViews) || 1,
-        show_to_guests: showToGuests,
-        is_active: true,
-      });
-      setSubject("");
-      setMessage("");
-      setMaxViews("1");
-      setShowToGuests(false);
+      if (editingId) {
+        await updateAnnouncement(apiClient, editingId, {
+          subject,
+          message,
+          max_views: Number(maxViews) || 1,
+          show_to_guests: showToGuests,
+        });
+      } else {
+        const result = await broadcastAnnouncement(apiClient, {
+          subject,
+          message,
+          maxViews: Number(maxViews) || 1,
+          showToGuests,
+          sendPopup,
+          sendEmail,
+        });
+        setBroadcastResult(result);
+      }
+      resetForm();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create announcement");
+      setError(err instanceof Error ? err.message : "Failed to save announcement");
     } finally {
-      setCreating(false);
+      setSubmitting(false);
     }
   }
 
@@ -84,8 +124,8 @@ export function AdminAnnouncementsTable() {
 
   return (
     <div>
-      <form onSubmit={handleCreate} className="rounded-xl border border-gray-200 bg-white p-4 mb-6 space-y-3">
-        <h2 className="font-semibold text-sm">New Announcement</h2>
+      <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-white p-4 mb-6 space-y-3">
+        <h2 className="font-semibold text-sm">{editingId ? "Edit Announcement" : "Broadcast Announcement"}</h2>
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -98,10 +138,10 @@ export function AdminAnnouncementsTable() {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Message"
           required
-          rows={2}
+          rows={3}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             Max views per user
             <input
@@ -117,14 +157,43 @@ export function AdminAnnouncementsTable() {
             Show to guests
           </label>
         </div>
+
+        {!editingId && (
+          <div className="flex items-center gap-4 flex-wrap border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" checked={sendPopup} onChange={(e) => setSendPopup(e.target.checked)} />
+              Show as in-app banner
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+              Email all users
+            </label>
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={creating}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-        >
-          {creating ? "Creating…" : "Create"}
-        </button>
+        {broadcastResult && (
+          <p className="text-sm text-emerald-700">
+            {broadcastResult.popupCreated && "In-app banner created. "}
+            {broadcastResult.emailsSent > 0 && `${broadcastResult.emailsSent} email(s) sent. `}
+            {broadcastResult.emailsFailed > 0 && `${broadcastResult.emailsFailed} email(s) failed.`}
+          </p>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={submitting || (!editingId && !sendPopup && !sendEmail)}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
+            {submitting ? "Saving…" : editingId ? "Save Changes" : "Send"}
+          </button>
+          {editingId && (
+            <button type="button" onClick={resetForm} className="px-4 py-2 rounded-lg text-gray-600 text-sm font-semibold">
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       {loading ? (
@@ -148,6 +217,9 @@ export function AdminAnnouncementsTable() {
                 </p>
               </div>
               <div className="flex gap-3 shrink-0 text-sm font-semibold">
+                <button onClick={() => startEdit(a)} disabled={busyId === a.id} className="text-gray-700 hover:underline disabled:opacity-50">
+                  Edit
+                </button>
                 <button onClick={() => toggleActive(a)} disabled={busyId === a.id} className="text-blue-600 hover:underline disabled:opacity-50">
                   {a.is_active ? "Deactivate" : "Activate"}
                 </button>

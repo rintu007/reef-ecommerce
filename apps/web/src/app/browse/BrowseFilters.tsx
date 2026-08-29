@@ -7,15 +7,10 @@ import {
   LISTING_TYPE_LABELS,
   SALTWATER_TYPES,
   FRESHWATER_TYPES,
+  useT,
   type ListingType,
 } from "@reef-market/shared";
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "price_low", label: "Price: Low to High" },
-  { value: "price_high", label: "Price: High to Low" },
-  { value: "featured", label: "Featured" },
-];
+import { useLanguagePrefs } from "@/lib/language-context";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 150, 200];
 
@@ -23,6 +18,15 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { lang } = useLanguagePrefs();
+  const t = useT(lang);
+
+  const SORT_OPTIONS = [
+    { value: "newest", label: t("newest") },
+    { value: "price_low", label: t("price_low") },
+    { value: "price_high", label: t("price_high") },
+    { value: "featured", label: "Featured" },
+  ];
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [minPrice, setMinPrice] = useState(searchParams.get("min_price") ?? "");
@@ -131,7 +135,7 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search listings…"
+          placeholder={t("search_placeholder")}
           className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
         />
         <button type="submit" className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold">
@@ -145,7 +149,7 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           onChange={(e) => navigate({ listing_type: e.target.value || undefined, category: undefined })}
           className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
         >
-          <option value="">All types</option>
+          <option value="">{t("all_types")}</option>
           {availableTypes.map((type) => (
             <option key={type} value={type}>
               {LISTING_TYPE_LABELS[type]}
@@ -159,7 +163,7 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
             onChange={(e) => navigate({ category: e.target.value || undefined })}
             className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
           >
-            <option value="">All categories</option>
+            <option value="">{t("all_categories")}</option>
             {availableCategories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
@@ -195,8 +199,8 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           title={locationActive ? "Locked to local pickup while a location filter is active" : undefined}
         >
           <option value="">Shipping or pickup</option>
-          <option value="shipping">Ships</option>
-          <option value="local_pickup">Local pickup</option>
+          <option value="shipping">{t("ships_to_me")}</option>
+          <option value="local_pickup">{t("local_pickup")}</option>
         </select>
 
         <select
@@ -247,7 +251,7 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           disabled={geoLoading}
           className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold disabled:opacity-50"
         >
-          📍 Use my location
+          📍 {geoLoading ? t("locating") : t("near_me")}
         </button>
         {geoError && <span className="text-xs text-red-600">{geoError}</span>}
       </div>

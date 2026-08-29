@@ -1,0 +1,33 @@
+{
+  "name": "Announcement",
+  "type": "object",
+  "rls": {
+    "read": true
+  },
+  "properties": {
+    "subject": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "max_views": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times each user sees this popup (0 = unlimited)"
+    },
+    "show_to_guests": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether guest users see this announcement"
+    }
+  },
+  "required": [
+    "subject",
+    "message"
+  ]
+}

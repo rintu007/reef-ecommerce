@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { EULAGate } from "@/components/EULAGate";
+import { UserPrefsModal } from "@/components/UserPrefsModal";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/lib/cart-context";
+import { LanguageProvider } from "@/lib/language-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,12 +33,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <CartProvider>
-          <EULAGate />
-          <AnnouncementBanner />
-          <Header />
-          {children}
-        </CartProvider>
+        <LanguageProvider>
+          <CartProvider>
+            <EULAGate />
+            <UserPrefsModal />
+            <AnnouncementBanner />
+            <Header />
+            {children}
+          </CartProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

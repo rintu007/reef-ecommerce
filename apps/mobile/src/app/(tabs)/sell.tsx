@@ -1,4 +1,4 @@
-import { deleteListing, listListings, updateListing, type Listing } from "@reef-market/shared";
+import { deleteListing, getSellerDashboardMetrics, listListings, updateListing, type Listing, type SellerDashboardMetrics } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { Calculator, Eye, Plus } from "lucide-react-native";
@@ -23,6 +23,7 @@ export default function SellScreen() {
   const { session } = useAuth();
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
+  const [metrics, setMetrics] = useState<SellerDashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [quickEditListing, setQuickEditListing] = useState<Listing | null>(null);
@@ -31,8 +32,12 @@ export default function SellScreen() {
     if (!session) return;
     setLoading(true);
     try {
-      const { listings } = await listListings(apiClient, { seller_id: session.user.id, sort: "newest", limit: 200 });
+      const [{ listings }, metrics] = await Promise.all([
+        listListings(apiClient, { seller_id: session.user.id, sort: "newest", limit: 200 }),
+        getSellerDashboardMetrics(apiClient),
+      ]);
       setListings(listings);
+      setMetrics(metrics);
     } finally {
       setLoading(false);
     }
@@ -132,6 +137,26 @@ export default function SellScreen() {
           data={listings}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 10 }}
+          ListHeaderComponent={
+            metrics ? (
+              // Legacy parity: reef-trade-flow's SellerDashboard.jsx "at a glance" metrics grid.
+              <View className="flex-row flex-wrap gap-3 mb-2">
+                {[
+                  { value: String(metrics.activeListings), label: "Active listings", color: themeColors.foreground },
+                  { value: `$${metrics.totalRevenue.toFixed(2)}`, label: "Completed sales", color: "#047857" },
+                  { value: String(metrics.pendingOrders), label: "Orders need attention", color: "#b45309" },
+                  { value: String(metrics.totalViews), label: "Total views", color: "#1d4ed8" },
+                ].map((m) => (
+                  <View key={m.label} className="bg-card border border-border rounded-xl p-3" style={{ width: "47%" }}>
+                    <Text className="text-xl font-bold" style={{ color: m.color }}>
+                      {m.value}
+                    </Text>
+                    <Text className="text-xs text-muted-foreground mt-0.5">{m.label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View className="items-center py-24 px-6">
               <Text className="text-muted-foreground text-center">You haven&apos;t created any listings yet.</Text>

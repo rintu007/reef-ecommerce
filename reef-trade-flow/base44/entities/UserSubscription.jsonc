@@ -1,0 +1,52 @@
+{
+  "name": "UserSubscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "plan_slug": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "business"
+      ],
+      "default": "free"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due",
+        "trialing"
+      ],
+      "default": "active"
+    },
+    "current_period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "current_period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "payment_provider": {
+      "type": "string",
+      "description": "e.g. stripe, manual"
+    },
+    "external_subscription_id": {
+      "type": "string",
+      "description": "Subscription ID from payment provider"
+    },
+    "external_customer_id": {
+      "type": "string",
+      "description": "Customer ID from payment provider"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan_slug"
+  ]
+}

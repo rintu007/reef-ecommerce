@@ -335,6 +335,32 @@ export function updateUserRole(client: ApiClient, id: string, role: UserRole) {
   return client.patch<{ profile: Profile }>(`/api/admin/users/${id}`, { role });
 }
 
+export function banUser(client: ApiClient, id: string, ban: boolean) {
+  return client.post<{ profile: Profile }>(`/api/admin/users/${id}/ban`, { ban });
+}
+
+export function adminDeleteUser(client: ApiClient, id: string) {
+  return client.delete<{ anonymized: boolean }>(`/api/admin/users/${id}`);
+}
+
+export interface UserActivityStats {
+  totalPurchases: number;
+  totalSpent: number;
+  totalSales: number;
+  totalRevenue: number;
+  activeListings: number;
+  totalListings: number;
+  lastActive: string | null;
+}
+
+export function getUserActivityStats(client: ApiClient, id: string) {
+  return client.get<UserActivityStats>(`/api/admin/users/${id}/stats`);
+}
+
+export function grantPromoToUser(client: ApiClient, id: string, code: string) {
+  return client.post<{ granted: string }>(`/api/admin/users/${id}/grant-promo`, { code });
+}
+
 export interface AdminReport extends Report {
   reporter: { id: string; display_name: string | null; email: string } | null;
   reported: { id: string; display_name: string | null; email: string } | null;
@@ -363,6 +389,25 @@ export function updateAnnouncement(client: ApiClient, id: string, input: Announc
 
 export function deleteAnnouncement(client: ApiClient, id: string) {
   return client.delete<{ deleted: true }>(`/api/admin/announcements/${id}`);
+}
+
+export interface BroadcastInput {
+  subject: string;
+  message: string;
+  sendEmail: boolean;
+  sendPopup: boolean;
+  maxViews: number;
+  showToGuests: boolean;
+}
+
+export interface BroadcastResult {
+  popupCreated: boolean;
+  emailsSent: number;
+  emailsFailed: number;
+}
+
+export function broadcastAnnouncement(client: ApiClient, input: BroadcastInput) {
+  return client.post<BroadcastResult>("/api/admin/announcements/broadcast", input);
 }
 
 export function listAdminHelpContent(client: ApiClient, params: { limit?: number; offset?: number } = {}) {
@@ -481,6 +526,18 @@ export function createPayoutOnboardingLink(client: ApiClient) {
   return client.post<{ url: string }>("/api/payouts/onboarding-link");
 }
 
+export interface SellerDashboardMetrics {
+  activeListings: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  totalViews: number;
+}
+
+/** Legacy parity: reef-trade-flow's SellerDashboard.jsx "at a glance" metrics grid. */
+export function getSellerDashboardMetrics(client: ApiClient) {
+  return client.get<SellerDashboardMetrics>("/api/seller/dashboard");
+}
+
 export function checkout(client: ApiClient, input: CheckoutInput) {
   return client.post<{ order: Order; clientSecret: string | null }>("/api/orders/checkout", input);
 }
@@ -551,4 +608,18 @@ export interface SellerReviewSummary {
 
 export function getSellerReviews(client: ApiClient, sellerId: string) {
   return client.get<SellerReviewSummary>(`/api/sellers/${sellerId}/reviews`);
+}
+
+// ============================================================== support
+
+export interface SupportMessageInput {
+  name: string;
+  email: string;
+  type: "question" | "feedback" | "bug" | "other";
+  message: string;
+}
+
+/** Public — no auth required. Legacy parity: reef-trade-flow's Support page contact form. */
+export function submitSupportMessage(client: ApiClient, input: SupportMessageInput) {
+  return client.post<{ sent: true }>("/api/support", input);
 }

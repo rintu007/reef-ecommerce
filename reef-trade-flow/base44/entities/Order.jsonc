@@ -1,0 +1,108 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "listing_id": {
+      "type": "string"
+    },
+    "listing_title": {
+      "type": "string"
+    },
+    "listing_photo": {
+      "type": "string"
+    },
+    "buyer_email": {
+      "type": "string"
+    },
+    "seller_email": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "total_charged": {
+      "type": "number",
+      "description": "Total amount charged to buyer including taxes and fees"
+    },
+    "sales_tax": {
+      "type": "number"
+    },
+    "buyer_service_fee": {
+      "type": "number"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "shipping_method": {
+      "type": "string",
+      "enum": [
+        "shipping",
+        "local_pickup"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "shipped",
+        "delivered",
+        "completed",
+        "cancelled",
+        "doa_claim",
+        "awaiting_pickup",
+        "pickup_confirmed"
+      ],
+      "default": "pending"
+    },
+    "tracking_number": {
+      "type": "string"
+    },
+    "carrier": {
+      "type": "string",
+      "description": "Carrier name e.g. UPS, FedEx, USPS"
+    },
+    "shipping_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "buyer_protection": {
+      "type": "boolean",
+      "default": false
+    },
+    "payment_intent_id": {
+      "type": "string",
+      "description": "Stripe PaymentIntent ID"
+    },
+    "pickup_address": {
+      "type": "string",
+      "description": "Full pickup address for local pickup orders"
+    },
+    "pickup_time": {
+      "type": "string",
+      "description": "Scheduled pickup time chosen by buyer"
+    },
+    "seller_marked_picked_up": {
+      "type": "boolean",
+      "default": false
+    },
+    "seller_marked_picked_up_at": {
+      "type": "string",
+      "description": "ISO datetime when seller marked pickup"
+    },
+    "buyer_confirmed_pickup": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "listing_id",
+    "buyer_email",
+    "seller_email",
+    "price"
+  ]
+}

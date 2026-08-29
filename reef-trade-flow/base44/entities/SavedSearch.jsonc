@@ -1,0 +1,51 @@
+{
+  "name": "SavedSearch",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who saved this search"
+    },
+    "name": {
+      "type": "string",
+      "description": "Friendly name e.g. 'Acans under $50'"
+    },
+    "listing_type": {
+      "type": "string",
+      "enum": [
+        "coral",
+        "fish",
+        "equipment"
+      ],
+      "description": "Filter by listing type (optional)"
+    },
+    "category": {
+      "type": "string",
+      "description": "Filter by sub-category (optional)"
+    },
+    "keyword": {
+      "type": "string",
+      "description": "Keyword to match against title/description"
+    },
+    "max_price": {
+      "type": "number",
+      "description": "Maximum price filter (optional)"
+    },
+    "shipping_available": {
+      "type": "boolean",
+      "description": "If true, only match listings that ship"
+    },
+    "local_pickup": {
+      "type": "boolean",
+      "description": "If true, only match listings with local pickup"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether email notifications are enabled"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

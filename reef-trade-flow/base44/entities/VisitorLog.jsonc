@@ -1,0 +1,26 @@
+{
+  "name": "VisitorLog",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "The page path visited e.g. /, /browse, /listing/abc"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Random session ID to deduplicate visits per session"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of logged-in user, empty for guests"
+    },
+    "is_guest": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "path",
+    "session_id"
+  ]
+}

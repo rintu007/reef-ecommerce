@@ -15,6 +15,7 @@ import { SubscriptionSection } from "@/components/SubscriptionSection";
 import { apiClient } from "@/lib/api-client";
 import { confirmAsync, notify } from "@/lib/alert";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguagePrefs } from "@/lib/language-context";
 import { supabase } from "@/lib/supabase";
 import { themeColors } from "@/lib/theme-colors";
 import { uploadPhotoFromUri } from "@/lib/uploads";
@@ -27,6 +28,7 @@ const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const { savePrefs } = useLanguagePrefs();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,9 @@ export default function ProfileScreen() {
       });
       setProfile(updated);
       setSaved(true);
+      // Keep the app-wide language context in sync so useT() picks up the
+      // change immediately, without waiting for a reload — see language-context.tsx.
+      savePrefs(updated.language, updated.country ?? "US");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
@@ -325,7 +330,10 @@ export default function ProfileScreen() {
           )}
         </Pressable>
 
-        <View className="flex-row justify-center gap-4 pt-2">
+        <View className="flex-row justify-center gap-4 pt-2 flex-wrap">
+          <Pressable onPress={() => router.push("/support")}>
+            <Text className="text-xs text-muted-foreground underline">Support</Text>
+          </Pressable>
           <Pressable onPress={() => router.push("/terms")}>
             <Text className="text-xs text-muted-foreground underline">Terms of Service</Text>
           </Pressable>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { deleteOwnAccount, getOwnProfile, updateOwnProfile, ApiError, LANGUAGES, type LanguageCode, type Profile } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
+import { useLanguagePrefs } from "@/lib/language-context";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { uploadPhoto } from "@/lib/uploads";
 import { BlockedUsersSection } from "./BlockedUsersSection";
@@ -14,6 +15,7 @@ import { SubscriptionSection } from "./SubscriptionSection";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { savePrefs } = useLanguagePrefs();
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -106,6 +108,9 @@ export default function ProfilePage() {
       });
       setProfile(updated);
       setSaved(true);
+      // Keep the app-wide language context in sync so useT() picks up the
+      // change immediately, without waiting for a reload — see language-context.tsx.
+      savePrefs(updated.language, updated.country ?? "US");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {

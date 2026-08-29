@@ -55,6 +55,7 @@ export const profileSchema = z.object({
   bonus_listing_slots: z.number().int().nonnegative(),
   seller_agreed: z.boolean(),
   eula_accepted: z.boolean(),
+  banned_at: isoDateTime().nullable(),
   created_at: isoDateTime(),
   updated_at: isoDateTime(),
 });

@@ -1,0 +1,92 @@
+{
+  "name": "Service",
+  "type": "object",
+  "rls": {
+    "read": true
+  },
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Service title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the service"
+    },
+    "service_type": {
+      "type": "string",
+      "enum": [
+        "tank_building",
+        "tank_cleaning_sw",
+        "tank_cleaning_fw",
+        "aquascaping",
+        "maintenance",
+        "water_testing",
+        "coral_fragging",
+        "fish_sitting",
+        "equipment_repair",
+        "tank_teardown",
+        "consultation",
+        "other"
+      ],
+      "description": "Type of service offered"
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "saltwater",
+        "freshwater",
+        "both"
+      ],
+      "default": "both"
+    },
+    "price_range": {
+      "type": "string",
+      "description": "e.g. $50-100, Free, Contact for quote"
+    },
+    "location": {
+      "type": "string",
+      "description": "Provider's city, State"
+    },
+    "service_area": {
+      "type": "string",
+      "description": "Areas/cities/radius they serve, e.g. Greater Chicago area, Within 50 miles of Atlanta"
+    },
+    "ships_nationwide": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether provider offers remote/shipped services"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Photo URLs"
+    },
+    "provider_email": {
+      "type": "string"
+    },
+    "provider_name": {
+      "type": "string"
+    },
+    "contact_info": {
+      "type": "string",
+      "description": "Phone, email, or other contact"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "removed"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "title",
+    "service_type",
+    "provider_email"
+  ]
+}

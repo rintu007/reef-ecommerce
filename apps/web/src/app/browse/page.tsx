@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MapPin, Truck } from "lucide-react";
 import { LISTING_TYPE_ICONS, LISTING_TYPE_LABELS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings, type ListingQueryParams } from "@/lib/server/listings";
@@ -81,12 +82,17 @@ export default async function BrowsePage({
               href={`/listings/${listing.id}`}
               className="relative rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-md transition-shadow"
             >
-              <div className="aspect-square bg-gray-100 flex items-center justify-center text-4xl">
+              <div className="aspect-square bg-gray-100 flex items-center justify-center text-4xl relative">
                 {listing.photos[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={listing.photos[0]} alt={listing.title} className="w-full h-full object-cover" />
                 ) : (
                   <span>{LISTING_TYPE_ICONS[listing.listing_type]}</span>
+                )}
+                {listing.featured && (
+                  <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5">
+                    Featured
+                  </span>
                 )}
               </div>
               {user && (
@@ -98,6 +104,19 @@ export default async function BrowsePage({
                 <p className="text-xs text-gray-500">{LISTING_TYPE_LABELS[listing.listing_type]}</p>
                 <p className="font-semibold text-sm truncate">{listing.title}</p>
                 <p className="text-sm font-bold">${listing.price.toFixed(2)}</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  {listing.quantity > 0 && <span className="text-[11px] font-semibold text-gray-900">{listing.quantity} available</span>}
+                  {listing.local_pickup && (
+                    <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                      <MapPin size={11} /> Local
+                    </span>
+                  )}
+                  {listing.shipping_available && (
+                    <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                      <Truck size={11} /> Ships
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           ))}

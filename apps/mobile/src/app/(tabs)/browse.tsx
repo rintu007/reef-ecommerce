@@ -4,6 +4,7 @@ import {
   LISTING_TYPE_LABELS,
   SALTWATER_TYPES,
   listListings,
+  useT,
   type Listing,
   type ListingType,
 } from "@reef-market/shared";
@@ -16,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { useLanguagePrefs } from "@/lib/language-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { ListingCard } from "@/components/ListingCard";
@@ -47,6 +49,8 @@ export default function BrowseScreen() {
   const { session } = useAuth();
   const { savedIds, toggle } = useWatchlist();
   const { count: cartCount } = useCart();
+  const { lang } = useLanguagePrefs();
+  const t = useT(lang);
   const params = useLocalSearchParams<{ market?: string }>();
 
   const [market, setMarket] = useState<Market>(params.market === "freshwater" ? "freshwater" : "saltwater");
@@ -167,7 +171,7 @@ export default function BrowseScreen() {
             <TextInput
               value={q}
               onChangeText={setQ}
-              placeholder="Search listings…"
+              placeholder={t("search_placeholder")}
               placeholderTextColor={themeColors.mutedForeground}
               className="flex-1 ml-2 text-sm text-foreground"
             />
@@ -207,7 +211,7 @@ export default function BrowseScreen() {
         {showFilters && (
           <View className="gap-2 pt-1">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              <Pill label="All types" active={!typeFilter} onPress={() => { setTypeFilter(null); setCategoryFilter(null); }} />
+              <Pill label={t("all_types")} active={!typeFilter} onPress={() => { setTypeFilter(null); setCategoryFilter(null); }} />
               {availableTypes.map((type) => (
                 <Pill key={type} label={LISTING_TYPE_LABELS[type]} active={typeFilter === type} onPress={() => { setTypeFilter(type); setCategoryFilter(null); }} />
               ))}
@@ -215,7 +219,7 @@ export default function BrowseScreen() {
 
             {availableCategories && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                <Pill label="All categories" active={!categoryFilter} onPress={() => setCategoryFilter(null)} />
+                <Pill label={t("all_categories")} active={!categoryFilter} onPress={() => setCategoryFilter(null)} />
                 {availableCategories.map((cat) => (
                   <Pill key={cat} label={cat} active={categoryFilter === cat} onPress={() => setCategoryFilter(cat)} />
                 ))}
@@ -223,9 +227,9 @@ export default function BrowseScreen() {
             )}
 
             <View className="flex-row items-center gap-2">
-              <Pill label="Any delivery" active={!shippingFilter} onPress={() => { if (!locationFilter) setShippingFilter(null); }} />
-              <Pill label="Local Pickup" active={shippingFilter === "local_pickup"} onPress={() => setShippingFilter("local_pickup")} />
-              <Pill label="Ships to Me" active={shippingFilter === "shipping"} onPress={() => { if (!locationFilter) setShippingFilter("shipping"); }} />
+              <Pill label={t("any_delivery")} active={!shippingFilter} onPress={() => { if (!locationFilter) setShippingFilter(null); }} />
+              <Pill label={t("local_pickup")} active={shippingFilter === "local_pickup"} onPress={() => setShippingFilter("local_pickup")} />
+              <Pill label={t("ships_to_me")} active={shippingFilter === "shipping"} onPress={() => { if (!locationFilter) setShippingFilter("shipping"); }} />
             </View>
 
             <View className="flex-row items-center gap-2">
@@ -275,7 +279,7 @@ export default function BrowseScreen() {
                   className="h-10 px-3 rounded-lg bg-muted flex-row items-center gap-1 justify-center"
                 >
                   <MapPin size={14} color={themeColors.mutedForeground} />
-                  <Text className="text-xs font-semibold text-muted-foreground">My Location</Text>
+                  <Text className="text-xs font-semibold text-muted-foreground">{geoLoading ? t("locating") : t("near_me")}</Text>
                 </Pressable>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
@@ -341,8 +345,8 @@ export default function BrowseScreen() {
         ListEmptyComponent={
           !loading ? (
             <View className="items-center py-24 px-6">
-              <Text className="text-base text-foreground mb-1">No listings match your filters</Text>
-              <Text className="text-sm text-muted-foreground">Try widening your search.</Text>
+              <Text className="text-base text-foreground mb-1">{t("no_listings")}</Text>
+              <Text className="text-sm text-muted-foreground">{t("try_filters")}</Text>
             </View>
           ) : null
         }

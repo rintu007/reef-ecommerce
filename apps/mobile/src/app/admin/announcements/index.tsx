@@ -1,9 +1,10 @@
 import {
-  createAnnouncement,
+  broadcastAnnouncement,
   deleteAnnouncement,
   listAdminAnnouncements,
   updateAnnouncement,
   type Announcement,
+  type BroadcastResult,
 } from "@reef-market/shared";
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
@@ -22,9 +23,9 @@ function FieldLabel({ children }: { children: string }) {
   return <Text className="text-sm font-medium text-muted-foreground mb-1">{children}</Text>;
 }
 
-// Mirrors apps/web/src/app/admin/announcements/AdminAnnouncementsTable.tsx, plus a
-// full edit form (the web table only exposes an active/inactive toggle + delete —
-// added inline editing here since updateAnnouncement already accepts every field).
+// Mirrors apps/web/src/app/admin/announcements/AdminAnnouncementsTable.tsx: full
+// edit form (updateAnnouncement accepts every field) plus broadcast (in-app
+// banner and/or email-all-users via broadcastAnnouncement) when creating new.
 function AdminAnnouncementsContent() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +37,11 @@ function AdminAnnouncementsContent() {
   const [maxViews, setMaxViews] = useState("1");
   const [showToGuests, setShowToGuests] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [sendPopup, setSendPopup] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [broadcastResult, setBroadcastResult] = useState<BroadcastResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +67,8 @@ function AdminAnnouncementsContent() {
     setMaxViews("1");
     setShowToGuests(false);
     setIsActive(true);
+    setSendPopup(true);
+    setSendEmail(false);
     setError(null);
   }
 
@@ -74,10 +80,12 @@ function AdminAnnouncementsContent() {
     setShowToGuests(a.show_to_guests);
     setIsActive(a.is_active);
     setError(null);
+    setBroadcastResult(null);
   }
 
   async function handleSubmit() {
     setError(null);
+    setBroadcastResult(null);
     setSubmitting(true);
     try {
       if (editingId) {
@@ -89,18 +97,20 @@ function AdminAnnouncementsContent() {
           is_active: isActive,
         });
       } else {
-        await createAnnouncement(apiClient, {
+        const result = await broadcastAnnouncement(apiClient, {
           subject,
           message,
-          max_views: Number(maxViews) || 1,
-          show_to_guests: showToGuests,
-          is_active: true,
+          maxViews: Number(maxViews) || 1,
+          showToGuests,
+          sendPopup,
+          sendEmail,
         });
+        setBroadcastResult(result);
       }
       resetForm();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${editingId ? "save" : "create"} announcement`);
+      setError(err instanceof Error ? err.message : `Failed to ${editingId ? "save" : "send"} announcement`);
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +143,8 @@ function AdminAnnouncementsContent() {
     }
   }
 
-  const canSubmit = !submitting && subject.trim().length > 0 && message.trim().length > 0;
+  const canSubmit =
+    !submitting && subject.trim().length > 0 && message.trim().length > 0 && (!!editingId || sendPopup || sendEmail);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
@@ -200,7 +211,27 @@ function AdminAnnouncementsContent() {
           </View>
         )}
 
+        {!editingId && (
+          <View className="gap-2 border-t border-border pt-3">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-foreground flex-1 pr-3">Show as in-app banner</Text>
+              <Switch value={sendPopup} onValueChange={setSendPopup} trackColor={{ true: themeColors.primary, false: undefined }} />
+            </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-foreground flex-1 pr-3">Email all users</Text>
+              <Switch value={sendEmail} onValueChange={setSendEmail} trackColor={{ true: themeColors.primary, false: undefined }} />
+            </View>
+          </View>
+        )}
+
         {error && <Text className="text-sm text-destructive">{error}</Text>}
+        {broadcastResult && (
+          <Text className="text-sm text-primary">
+            {broadcastResult.popupCreated && "In-app banner created. "}
+            {broadcastResult.emailsSent > 0 && `${broadcastResult.emailsSent} email(s) sent. `}
+            {broadcastResult.emailsFailed > 0 && `${broadcastResult.emailsFailed} email(s) failed.`}
+          </Text>
+        )}
 
         <Pressable
           testID="announcement-submit-button"
@@ -212,7 +243,7 @@ function AdminAnnouncementsContent() {
             <ActivityIndicator color={themeColors.white} />
           ) : (
             <Text className={`font-semibold text-sm ${canSubmit ? "text-white" : "text-muted-foreground"}`}>
-              {editingId ? "Save Changes" : "Create"}
+              {editingId ? "Save Changes" : "Send"}
             </Text>
           )}
         </Pressable>

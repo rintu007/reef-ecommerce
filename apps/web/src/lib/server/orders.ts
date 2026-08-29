@@ -447,6 +447,38 @@ export async function refundOrder(orderId: string, adminId: string, mode: "refun
   return updated as Order;
 }
 
+export interface SellerDashboardMetrics {
+  activeListings: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  totalViews: number;
+}
+
+/**
+ * Legacy parity: reef-trade-flow's SellerDashboard.jsx "at a glance" metrics
+ * grid (active listings / revenue / pending orders / views) — the data was
+ * always available in this app, just scattered across separate screens
+ * (my-listings, orders) with no single summary. Matches legacy's own
+ * definition of "revenue" exactly: sum of `price` on completed orders, not
+ * the post-fee payout amount.
+ */
+export async function getSellerDashboardMetrics(sellerId: string): Promise<SellerDashboardMetrics> {
+  const db = supabaseAdmin();
+  const [{ count: activeListings }, { data: listingViews }, { data: completedOrders }, { count: pendingOrders }] = await Promise.all([
+    db.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", sellerId).eq("status", "active"),
+    db.from("listings").select("views").eq("seller_id", sellerId),
+    db.from("orders").select("price").eq("seller_id", sellerId).eq("status", "completed"),
+    db.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", sellerId).in("status", ["pending", "confirmed"]),
+  ]);
+
+  return {
+    activeListings: activeListings ?? 0,
+    totalRevenue: (completedOrders ?? []).reduce((sum, o) => sum + (o.price ?? 0), 0),
+    pendingOrders: pendingOrders ?? 0,
+    totalViews: (listingViews ?? []).reduce((sum, l) => sum + (l.views ?? 0), 0),
+  };
+}
+
 export async function listOrdersForUser(userId: string, role: "buyer" | "seller"): Promise<Order[]> {
   const db = supabaseAdmin();
   const { data, error } = await db

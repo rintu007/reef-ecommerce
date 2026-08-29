@@ -1,6 +1,7 @@
 import type { Announcement, AnnouncementCreateInput, AnnouncementUpdateInput } from "@reef-market/shared";
 import type { AuthUser } from "./auth";
 import { supabaseAdmin } from "./supabase-admin";
+import { sendBroadcastEmail } from "./email";
 
 /** Most recent active announcement visible to this viewer, or null. No per-user view-cap tracking table exists — max_views is enforced client-side via local storage. */
 export async function getActiveAnnouncement(viewer: AuthUser | null): Promise<Announcement | null> {
@@ -46,4 +47,48 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   const db = supabaseAdmin();
   const { error } = await db.from("announcements").delete().eq("id", id);
   if (error) throw error;
+}
+
+export interface BroadcastInput {
+  subject: string;
+  message: string;
+  sendEmail: boolean;
+  sendPopup: boolean;
+  maxViews: number;
+  showToGuests: boolean;
+}
+
+export interface BroadcastResult {
+  popupCreated: boolean;
+  emailsSent: number;
+  emailsFailed: number;
+}
+
+/** Legacy parity: reef-trade-flow's admin "Broadcast Announcement" (sendBroadcastMessage) — an in-app popup, an email blast, or both. */
+export async function broadcastAnnouncement(input: BroadcastInput): Promise<BroadcastResult> {
+  let popupCreated = false;
+  if (input.sendPopup) {
+    await createAnnouncement({
+      subject: input.subject,
+      message: input.message,
+      is_active: true,
+      max_views: input.maxViews,
+      show_to_guests: input.showToGuests,
+    });
+    popupCreated = true;
+  }
+
+  let emailsSent = 0;
+  let emailsFailed = 0;
+  if (input.sendEmail) {
+    const db = supabaseAdmin();
+    const { data: profiles, error } = await db.from("profiles").select("email");
+    if (error) throw error;
+    const emails = (profiles ?? []).map((p) => p.email).filter(Boolean) as string[];
+    const result = await sendBroadcastEmail(emails, input.subject, input.message);
+    emailsSent = result.sent;
+    emailsFailed = result.failed;
+  }
+
+  return { popupCreated, emailsSent, emailsFailed };
 }

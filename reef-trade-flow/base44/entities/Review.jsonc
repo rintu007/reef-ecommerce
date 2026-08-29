@@ -1,0 +1,37 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "listing_id": {
+      "type": "string"
+    },
+    "seller_email": {
+      "type": "string"
+    },
+    "reviewer_email": {
+      "type": "string"
+    },
+    "reviewer_name": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "1-5 stars"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "seller_review",
+        "buyer_review"
+      ]
+    }
+  },
+  "required": [
+    "seller_email",
+    "reviewer_email",
+    "rating"
+  ]
+}
