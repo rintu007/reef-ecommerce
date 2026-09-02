@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const PLACEHOLDER_PHOTO = "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=400&q=80";
 
@@ -47,12 +48,43 @@ const SELL_CATEGORIES: { emoji: string; label: string; desc: string; image: stri
 function PreviewRow({ market, label }: { market: "saltwater" | "freshwater"; label: string }) {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listListings(apiClient, { market, sort: "newest", limit: 6 })
-      .then((res) => setListings(res.listings))
-      .catch(() => setListings([]));
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await listListings(apiClient, { market, sort: "newest", limit: 6 });
+        setListings(res.listings);
+      } catch {
+        setListings([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, [market]);
+
+  if (loading) {
+    return (
+      <View className="mt-3">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-xs font-bold text-white/70 uppercase tracking-widest">{label} · New</Text>
+        </View>
+        <View className="flex-row" style={{ gap: 10 }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} className="w-[130px] rounded-xl overflow-hidden bg-white/10">
+              <Skeleton color="rgba(255,255,255,0.15)" style={{ width: "100%", height: 90 }} className="rounded-none" />
+              <View className="p-2 gap-1.5">
+                <Skeleton color="rgba(255,255,255,0.15)" style={{ height: 10, width: "80%" }} />
+                <Skeleton color="rgba(255,255,255,0.15)" style={{ height: 10, width: "40%" }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   if (listings.length === 0) return null;
 

@@ -21,6 +21,7 @@ import { useLanguagePrefs } from "@/lib/language-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { ListingCard } from "@/components/ListingCard";
+import { ListingGridSkeleton } from "@/components/ListingCardSkeleton";
 
 type Market = "saltwater" | "freshwater";
 
@@ -328,37 +329,37 @@ export default function BrowseScreen() {
         </View>
       )}
 
-      <FlatList
-        data={listings}
-        numColumns={2}
-        keyExtractor={(item) => item.id}
-        columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-        contentContainerStyle={{ gap: 12, paddingVertical: 12 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={themeColors.primary} />}
-        ListHeaderComponent={
-          loading ? null : (
+      {loading ? (
+        <ListingGridSkeleton />
+      ) : (
+        <FlatList
+          data={listings}
+          numColumns={2}
+          keyExtractor={(item) => item.id}
+          columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
+          contentContainerStyle={{ gap: 12, paddingVertical: 12 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={themeColors.primary} />}
+          ListHeaderComponent={
             <Text className="text-xs text-muted-foreground px-0.5 pb-1">
               {total} listing{total === 1 ? "" : "s"}
             </Text>
-          )
-        }
-        ListEmptyComponent={
-          !loading ? (
+          }
+          ListEmptyComponent={
             <View className="items-center py-24 px-6">
               <Text className="text-base text-foreground mb-1">{t("no_listings")}</Text>
               <Text className="text-sm text-muted-foreground">{t("try_filters")}</Text>
             </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <ListingCard
-            listing={item}
-            isSaved={savedIds.has(item.id)}
-            showSave={!!session}
-            onToggleSave={() => toggle(item.id, savedIds.has(item.id))}
-          />
-        )}
-      />
+          }
+          renderItem={({ item }) => (
+            <ListingCard
+              listing={item}
+              isSaved={savedIds.has(item.id)}
+              showSave={!!session}
+              onToggleSave={() => toggle(item.id, savedIds.has(item.id))}
+            />
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
