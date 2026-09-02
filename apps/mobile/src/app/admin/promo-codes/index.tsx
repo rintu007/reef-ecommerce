@@ -11,12 +11,13 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { apiClient } from "@/lib/api-client";
 import { confirmAsync, notify } from "@/lib/alert";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { safeGoBack } from "@/lib/navigation";
 
 const PROMO_TYPES: { value: PromoType; label: string }[] = [
@@ -244,7 +245,7 @@ function PromoCodesContent() {
         {editingId && (
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-foreground">Active</Text>
-            <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: themeColors.primary, false: undefined }} />
+            <ToggleSwitch value={isActive} onValueChange={setIsActive} />
           </View>
         )}
 

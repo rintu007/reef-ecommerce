@@ -10,12 +10,13 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { confirmAsync, notify } from "@/lib/alert";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { safeGoBack } from "@/lib/navigation";
 
 const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground";
@@ -221,13 +222,13 @@ function AdminAnnouncementsContent() {
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-foreground flex-1 pr-3">Show to guests</Text>
-          <Switch value={showToGuests} onValueChange={setShowToGuests} trackColor={{ true: themeColors.primary, false: undefined }} />
+          <ToggleSwitch value={showToGuests} onValueChange={setShowToGuests} />
         </View>
 
         {editingId && (
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-foreground flex-1 pr-3">Active</Text>
-            <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: themeColors.primary, false: undefined }} />
+            <ToggleSwitch value={isActive} onValueChange={setIsActive} />
           </View>
         )}
 
@@ -235,11 +236,11 @@ function AdminAnnouncementsContent() {
           <View className="gap-2 border-t border-border pt-3">
             <View className="flex-row items-center justify-between">
               <Text className="text-sm text-foreground flex-1 pr-3">Show as in-app banner</Text>
-              <Switch value={sendPopup} onValueChange={setSendPopup} trackColor={{ true: themeColors.primary, false: undefined }} />
+              <ToggleSwitch value={sendPopup} onValueChange={setSendPopup} />
             </View>
             <View className="flex-row items-center justify-between">
               <Text className="text-sm text-foreground flex-1 pr-3">Email all users</Text>
-              <Switch value={sendEmail} onValueChange={setSendEmail} trackColor={{ true: themeColors.primary, false: undefined }} />
+              <ToggleSwitch value={sendEmail} onValueChange={setSendEmail} />
             </View>
           </View>
         )}

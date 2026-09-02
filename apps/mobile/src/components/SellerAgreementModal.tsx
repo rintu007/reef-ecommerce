@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 function FeeRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
@@ -91,7 +92,7 @@ export function SellerAgreementModal({ onAgree, onClose }: { onAgree: () => void
 
         <View className="px-5 pt-3 pb-4 border-t border-border gap-3">
           <Pressable className="flex-row items-start gap-3" onPress={() => setChecked((v) => !v)}>
-            <Switch value={checked} onValueChange={setChecked} />
+            <ToggleSwitch value={checked} onValueChange={setChecked} />
             <Text className="flex-1 text-sm text-foreground">
               I understand that Reef Market&apos;s 5% fee and Stripe&apos;s processing fee are deducted from my payout.
               Fees apply to the full item + shipping total. I am responsible for shipping costs and agree to all terms

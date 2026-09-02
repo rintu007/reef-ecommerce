@@ -12,12 +12,13 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { confirmAsync, notify } from "@/lib/alert";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { safeGoBack } from "@/lib/navigation";
 
 const CONTENT_TYPES: HelpContentType[] = ["article", "video", "tip", "faq"];
@@ -269,7 +270,7 @@ function AdminHelpContentContent() {
         {editingId && (
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-foreground flex-1 pr-3">Published</Text>
-            <Switch value={published} onValueChange={setPublished} trackColor={{ true: themeColors.primary, false: undefined }} />
+            <ToggleSwitch value={published} onValueChange={setPublished} />
           </View>
         )}
 

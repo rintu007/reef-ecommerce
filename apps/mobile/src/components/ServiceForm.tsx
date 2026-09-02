@@ -4,9 +4,10 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { uploadPhotoFromUri } from "@/lib/uploads";
 
 const MARKET_OPTIONS: MarketType[] = ["saltwater", "freshwater", "both"];
@@ -200,7 +201,7 @@ export function ServiceForm({
 
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-foreground flex-1 pr-3">I offer remote or shipped services (nationwide)</Text>
-        <Switch value={shipsNationwide} onValueChange={setShipsNationwide} trackColor={{ true: themeColors.primary, false: undefined }} />
+        <ToggleSwitch value={shipsNationwide} onValueChange={setShipsNationwide} />
       </View>
 
       <View className="flex-row gap-4">

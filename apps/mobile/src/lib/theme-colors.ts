@@ -10,4 +10,11 @@ export const themeColors = {
   foreground: "#171d26",
   border: "#e0e6eb",
   white: "#ffffff",
+  // Switch (toggle) colors — RN's Switch needs literal on/off values for
+  // both the track and the thumb (unlike trackColor, thumbColor isn't an
+  // {true, false} object, so callers compute it from their own `value`).
+  // Left at their platform defaults, the off-state track/thumb were both
+  // near-invisible against the light background.
+  switchTrackOff: "#c7ced6",
+  switchThumbOff: "#6c7c93",
 } as const;

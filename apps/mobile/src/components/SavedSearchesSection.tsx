@@ -8,9 +8,10 @@ import {
   type SavedSearch,
 } from "@reef-market/shared";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 const LISTING_TYPES = Object.keys(LISTING_TYPE_LABELS) as ListingType[];
 
@@ -141,11 +142,11 @@ export function SavedSearchesSection() {
           </View>
           <View className="flex-row items-center justify-between">
             <Text className="text-xs text-muted-foreground">Shipping available</Text>
-            <Switch value={shippingAvailable} onValueChange={setShippingAvailable} trackColor={{ true: themeColors.primary, false: undefined }} />
+            <ToggleSwitch value={shippingAvailable} onValueChange={setShippingAvailable} />
           </View>
           <View className="flex-row items-center justify-between">
             <Text className="text-xs text-muted-foreground">Local pickup</Text>
-            <Switch value={localPickup} onValueChange={setLocalPickup} trackColor={{ true: themeColors.primary, false: undefined }} />
+            <ToggleSwitch value={localPickup} onValueChange={setLocalPickup} />
           </View>
           {error && <Text className="text-xs text-destructive">{error}</Text>}
           <Pressable onPress={handleCreate} disabled={creating} className="bg-foreground rounded-lg py-2.5 items-center">

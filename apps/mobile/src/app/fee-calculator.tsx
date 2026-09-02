@@ -2,9 +2,10 @@ import { computeCheckoutBreakdown, fromCents } from "@reef-market/shared";
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { safeGoBack } from "@/lib/navigation";
 
 function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
@@ -111,7 +112,7 @@ export default function FeeCalculatorScreen() {
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-foreground">Featured listing fee</Text>
-          <Switch value={featured} onValueChange={setFeatured} trackColor={{ true: themeColors.primary, false: undefined }} />
+          <ToggleSwitch value={featured} onValueChange={setFeatured} />
         </View>
 
         <View className="rounded-xl border border-border bg-muted p-4">

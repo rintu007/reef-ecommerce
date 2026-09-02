@@ -2,12 +2,13 @@ import { listAdminMembershipPlans, updateMembershipPlan, type MembershipPlan } f
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AdminGate } from "@/components/AdminGate";
 import { apiClient } from "@/lib/api-client";
 import { notify } from "@/lib/alert";
 import { themeColors } from "@/lib/theme-colors";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { safeGoBack } from "@/lib/navigation";
 
 const inputClassName = "border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground";
@@ -157,7 +158,7 @@ function AdminMembershipPlansContent() {
             </View>
             <View className="flex-row items-center justify-between">
               <Text className="text-sm text-foreground flex-1 pr-3">Active (offered to new subscribers)</Text>
-              <Switch value={form.is_active} onValueChange={(v) => setForm({ ...form, is_active: v })} trackColor={{ true: themeColors.primary, false: undefined }} />
+              <ToggleSwitch value={form.is_active} onValueChange={(v) => setForm({ ...form, is_active: v })} />
             </View>
             {error && <Text className="text-sm text-destructive">{error}</Text>}
             <View className="flex-row gap-3">

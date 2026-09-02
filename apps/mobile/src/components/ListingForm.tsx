@@ -24,10 +24,11 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 import { uploadPhotoFromUri } from "@/lib/uploads";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -570,23 +571,15 @@ export function ListingForm({
 
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-foreground">Local pickup</Text>
-        <Switch
-          value={localPickup}
-          onValueChange={setLocalPickup}
-          trackColor={{ true: themeColors.primary, false: undefined }}
-        />
+        <ToggleSwitch value={localPickup} onValueChange={setLocalPickup} />
       </View>
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-foreground">Shipping available</Text>
-        <Switch
-          value={shippingAvailable}
-          onValueChange={setShippingAvailable}
-          trackColor={{ true: themeColors.primary, false: undefined }}
-        />
+        <ToggleSwitch value={shippingAvailable} onValueChange={setShippingAvailable} />
       </View>
       <View className="flex-row items-center justify-between">
         <Text className="text-sm text-foreground">WYSIWYG</Text>
-        <Switch value={form.wysiwyg} onValueChange={(v) => update("wysiwyg", v)} trackColor={{ true: themeColors.primary, false: undefined }} />
+        <ToggleSwitch value={form.wysiwyg} onValueChange={(v) => update("wysiwyg", v)} />
       </View>
 
       {shippingAvailable && (
@@ -594,13 +587,12 @@ export function ListingForm({
           <Text className="text-sm font-semibold text-foreground">📦 Shipping Settings</Text>
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-foreground">Use tiered shipping prices?</Text>
-            <Switch
+            <ToggleSwitch
               value={form.useShippingTiers}
               onValueChange={(v) => {
                 update("useShippingTiers", v);
                 if (!v) update("shippingTiers", []);
               }}
-              trackColor={{ true: themeColors.primary, false: undefined }}
             />
           </View>
 
@@ -673,13 +665,12 @@ export function ListingForm({
         <View className="gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
           <View className="flex-row items-center justify-between">
             <Text className="text-sm font-medium text-foreground">Different price for local pickup?</Text>
-            <Switch
+            <ToggleSwitch
               value={form.diffPickupPrice}
               onValueChange={(v) => {
                 update("diffPickupPrice", v);
                 if (!v) update("pickupPrice", "");
               }}
-              trackColor={{ true: themeColors.primary, false: undefined }}
             />
           </View>
           {form.diffPickupPrice && (
@@ -882,7 +873,7 @@ export function ListingForm({
           {isFish && (
             <View className="flex-row items-center justify-between">
               <Text className="text-sm text-foreground">Reef Safe</Text>
-              <Switch value={form.reefSafe} onValueChange={(v) => update("reefSafe", v)} trackColor={{ true: themeColors.primary, false: undefined }} />
+              <ToggleSwitch value={form.reefSafe} onValueChange={(v) => update("reefSafe", v)} />
             </View>
           )}
           <View>
@@ -977,7 +968,7 @@ export function ListingForm({
       )}
 
       <View className="flex-row items-start gap-2 border border-border rounded-xl p-3">
-        <Switch value={featuredFee} onValueChange={setFeaturedFee} trackColor={{ true: themeColors.primary, false: undefined }} />
+        <ToggleSwitch value={featuredFee} onValueChange={setFeaturedFee} />
         <View className="flex-1">
           <Text className="text-sm font-medium text-foreground">Feature this listing</Text>
           <Text className="text-xs text-muted-foreground mt-0.5">
