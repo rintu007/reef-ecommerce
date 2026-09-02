@@ -239,7 +239,7 @@ export default function BrowseScreen() {
                 placeholder="Min $"
                 placeholderTextColor={themeColors.mutedForeground}
                 keyboardType="numeric"
-                className="w-20 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
+                className="flex-1 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
               />
               <Text className="text-muted-foreground">–</Text>
               <TextInput
@@ -248,7 +248,7 @@ export default function BrowseScreen() {
                 placeholder="Max $"
                 placeholderTextColor={themeColors.mutedForeground}
                 keyboardType="numeric"
-                className="w-20 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
+                className="flex-1 h-10 rounded-lg bg-muted px-3 text-sm text-foreground"
               />
             </View>
 
