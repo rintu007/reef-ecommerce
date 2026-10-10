@@ -1,26 +1,178 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/*
+ * Reef Market design system.
+ *
+ * The site is light-only on purpose: every page/component is written with
+ * light-surface utilities (bg-white, text-gray-*), so the starter template's
+ * prefers-color-scheme dark override used to flip only the page background —
+ * leaving white cards with near-white text. Don't reintroduce a dark mode
+ * here without converting the components to tokens first.
+ *
+ * `gray` and `blue` are re-tuned (not added) so the hundreds of existing
+ * gray and blue utilities across the app inherit the brand palette at once:
+ * gray → warm paper/ink neutrals, blue → deep-ocean brand blue.
+ */
+/* `inline` so the next/font variables (set on <body>, not :root) resolve where used. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display-serif), ui-serif, Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+
+  --color-paper: #f5f3ee;
+  --color-ink: #0c1a21;
+  --color-abyss: #05161f;
+  --color-coral: #ff6a4d;
+  --color-lagoon: #4fd1c5;
+
+  --color-gray-50: #faf9f6;
+  --color-gray-100: #f0eee9;
+  --color-gray-200: #e4e1da;
+  --color-gray-300: #d0ccc3;
+  --color-gray-400: #a29e95;
+  --color-gray-500: #75726b;
+  --color-gray-600: #5a5852;
+  --color-gray-700: #403f3a;
+  --color-gray-800: #282825;
+  --color-gray-900: #161716;
+  --color-gray-950: #0c0d0c;
+
+  --color-slate-50: #faf9f6;
+  --color-slate-100: #f0eee9;
+  --color-slate-200: #e4e1da;
+  --color-slate-300: #d0ccc3;
+  --color-slate-400: #a29e95;
+  --color-slate-500: #75726b;
+  --color-slate-600: #5a5852;
+  --color-slate-700: #403f3a;
+  --color-slate-800: #282825;
+  --color-slate-900: #161716;
+
+  --color-blue-50: #edf5fa;
+  --color-blue-100: #d5e9f4;
+  --color-blue-200: #acd3e9;
+  --color-blue-300: #79b6d9;
+  --color-blue-400: #4394c2;
+  --color-blue-500: #1d76a7;
+  --color-blue-600: #0e5d8a;
+  --color-blue-700: #0b4b70;
+  --color-blue-800: #0a3c5a;
+  --color-blue-900: #092f47;
+  --color-blue-950: #051c2c;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-rise: rise 0.9s var(--ease-out-expo) both;
+  --animate-fade: fade 1.2s var(--ease-out-expo) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    color-scheme: light;
+    background: var(--color-paper);
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-gray-900);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-blue-200);
+    color: var(--color-ink);
+  }
+
+  /* Form controls: consistent white surface + visible brand focus ring,
+     at zero specificity so any utility class on the element still wins. */
+  :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"]), select, textarea) {
+    background-color: #fff;
+    color: var(--color-gray-900);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  :where(input, select, textarea, button, a):focus-visible {
+    outline: 2px solid var(--color-blue-500);
+    outline-offset: 2px;
+  }
+
+  :where(input, select, textarea):focus {
+    border-color: var(--color-blue-500);
+  }
+
+  ::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  :where(h1, h2, h3) {
+    letter-spacing: -0.02em;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  /* Film-grain overlay for dark hero sections — gives flat gradients depth. */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* Native select with a custom chevron (appearance reset keeps it consistent across browsers). */
+  .select-chevron {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2375726b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

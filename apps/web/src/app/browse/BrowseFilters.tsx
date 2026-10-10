@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState } from "react";
+import { LocateFixed, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   ALL_CATEGORIES,
   LISTING_TYPE_LABELS,
@@ -129,25 +130,38 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
     navigate({ zip: undefined, lat: undefined, lng: undefined, radius_miles: undefined });
   }
 
+  const control =
+    "h-10 rounded-full border border-gray-200 bg-white px-4 text-sm text-gray-800 hover:border-gray-300 transition-colors";
+  const selectControl = `${control} select-chevron pr-9`;
+
   return (
-    <div className="mb-6 space-y-3">
+    <div className="mb-10 rounded-3xl bg-white border border-gray-900/[0.06] p-3 sm:p-4 shadow-[0_20px_50px_-30px_rgba(12,26,33,0.3)]">
       <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t("search_placeholder")}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
-        <button type="submit" className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("search_placeholder")}
+            aria-label="Search listings"
+            className="w-full h-12 rounded-full bg-gray-50 border border-transparent pl-11 pr-4 text-[15px] focus:bg-white"
+          />
+        </div>
+        <button
+          type="submit"
+          className="h-12 px-6 rounded-full bg-ink text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
           Search
         </button>
       </form>
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center mt-3">
+        <SlidersHorizontal size={16} className="text-gray-400 mx-1 hidden sm:block" aria-hidden />
         <select
           value={listingType}
           onChange={(e) => navigate({ listing_type: e.target.value || undefined, category: undefined })}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+          aria-label="Listing type"
+          className={selectControl}
         >
           <option value="">{t("all_types")}</option>
           {availableTypes.map((type) => (
@@ -161,7 +175,8 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           <select
             value={category}
             onChange={(e) => navigate({ category: e.target.value || undefined })}
-            className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+            aria-label="Category"
+            className={selectControl}
           >
             <option value="">{t("all_categories")}</option>
             {availableCategories.map((cat) => (
@@ -172,30 +187,36 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           </select>
         )}
 
-        <input
-          type="number"
-          min="0"
-          value={minPrice}
-          onChange={(e) => setMinPrice(e.target.value)}
-          onBlur={handleSubmit}
-          placeholder="Min $"
-          className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-        />
-        <input
-          type="number"
-          min="0"
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-          onBlur={handleSubmit}
-          placeholder="Max $"
-          className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-        />
+        <div className={`${control} flex items-center gap-1 px-1.5`}>
+          <input
+            type="number"
+            min="0"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            onBlur={handleSubmit}
+            placeholder="Min $"
+            aria-label="Minimum price"
+            className="w-20 h-8 rounded-full border-0 px-2.5 text-sm bg-transparent"
+          />
+          <span className="text-gray-300">–</span>
+          <input
+            type="number"
+            min="0"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            onBlur={handleSubmit}
+            placeholder="Max $"
+            aria-label="Maximum price"
+            className="w-20 h-8 rounded-full border-0 px-2.5 text-sm bg-transparent"
+          />
+        </div>
 
         <select
           value={locationActive ? "local_pickup" : shipping}
           disabled={locationActive}
           onChange={(e) => navigate({ shipping: e.target.value || undefined })}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm disabled:opacity-60"
+          aria-label="Delivery"
+          className={`${selectControl} disabled:opacity-60`}
           title={locationActive ? "Locked to local pickup while a location filter is active" : undefined}
         >
           <option value="">Shipping or pickup</option>
@@ -206,7 +227,8 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
         <select
           value={sort}
           onChange={(e) => navigate({ sort: e.target.value })}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm ml-auto"
+          aria-label="Sort"
+          className={`${selectControl} sm:ml-auto`}
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -216,20 +238,30 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
         </select>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200">
-        <span className="text-sm font-medium text-gray-700">Search by location</span>
+      <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <span className="flex items-center gap-1.5 text-sm text-gray-600 mr-1">
+          <MapPin size={15} className="text-gray-400" aria-hidden /> Near you
+        </span>
         <input
           type="text"
           inputMode="numeric"
           value={zipInput}
           onChange={(e) => setZipInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleZipSearch();
+            }
+          }}
           placeholder="ZIP code"
-          className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+          aria-label="ZIP code"
+          className={`${control} w-32`}
         />
         <select
           value={radiusMiles}
           onChange={(e) => handleRadiusChange(e.target.value)}
-          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+          aria-label="Radius"
+          className={selectControl}
         >
           {RADIUS_OPTIONS.map((r) => (
             <option key={r} value={r}>
@@ -241,36 +273,34 @@ export function BrowseFilters({ market }: { market: "saltwater" | "freshwater" }
           type="button"
           onClick={handleZipSearch}
           disabled={geoLoading}
-          className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-sm font-semibold disabled:opacity-50"
+          className="h-10 px-4 rounded-full bg-gray-100 text-ink text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
-          Search
+          Go
         </button>
         <button
           type="button"
           onClick={handleUseMyLocation}
           disabled={geoLoading}
-          className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold disabled:opacity-50"
+          className="h-10 px-4 inline-flex items-center gap-1.5 rounded-full text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-50"
         >
-          📍 {geoLoading ? t("locating") : t("near_me")}
+          <LocateFixed size={15} aria-hidden /> {geoLoading ? t("locating") : t("near_me")}
         </button>
         {geoError && <span className="text-xs text-red-600">{geoError}</span>}
-      </div>
 
-      {locationActive && (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-xs font-medium">
-            {zip ? `ZIP ${zip}` : "My Location"} — within {radiusMiles}mi
+        {locationActive && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 pl-3 pr-1.5 h-8 text-xs font-medium sm:ml-auto">
+            {zip ? `ZIP ${zip}` : "My location"} · within {radiusMiles} mi
             <button
               type="button"
               onClick={handleClearLocation}
               aria-label="Clear location filter"
-              className="text-blue-700 hover:text-blue-900 font-bold leading-none"
+              className="w-5 h-5 rounded-full hover:bg-blue-100 flex items-center justify-center"
             >
-              ×
+              <X size={12} />
             </button>
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

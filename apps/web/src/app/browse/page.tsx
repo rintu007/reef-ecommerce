@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { MapPin, Truck } from "lucide-react";
-import { LISTING_TYPE_ICONS, LISTING_TYPE_LABELS } from "@reef-market/shared";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { queryListings, type ListingQueryParams } from "@/lib/server/listings";
 import { listSavedListingIds } from "@/lib/server/watchlist";
-import { SaveButton } from "@/components/SaveButton";
+import { ListingCard } from "@/components/ListingCard";
 import { BrowseFilters } from "./BrowseFilters";
 
 type Market = "saltwater" | "freshwater";
@@ -39,86 +37,64 @@ export default async function BrowsePage({
   ]);
   const savedSet = new Set(savedIds);
 
+  const isSalt = market === "saltwater";
+
   return (
-    <div className="min-h-screen max-w-6xl mx-auto p-6">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Browse</h1>
-        <nav className="flex gap-2">
-          <Link
-            href="/browse?market=saltwater"
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-              market === "saltwater" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            🪸 Saltwater
-          </Link>
-          <Link
-            href="/browse?market=freshwater"
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-              market === "freshwater" ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            🐟 Freshwater
-          </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-10">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 sm:mb-10">
+        <div className="animate-rise">
+          <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-3">Marketplace · {total} live listing{total === 1 ? "" : "s"}</p>
+          <h1 className="font-display text-5xl sm:text-7xl leading-[0.95] text-ink">
+            {isSalt ? (
+              <>
+                Saltwater <em className="italic text-blue-600">&amp; reef</em>
+              </>
+            ) : (
+              <>
+                Freshwater <em className="italic text-emerald-700">&amp; planted</em>
+              </>
+            )}
+          </h1>
+          <p className="mt-3 text-gray-500 max-w-md">
+            {isSalt
+              ? "Corals, reef fish, inverts and equipment from fellow hobbyists."
+              : "Fish, amphibians, plants and equipment from fellow hobbyists."}
+          </p>
+        </div>
+        <nav className="inline-flex self-start lg:self-auto p-1 rounded-full bg-gray-900/[0.06]" aria-label="Market">
+          {(
+            [
+              { value: "saltwater", label: "Saltwater", emoji: "🪸" },
+              { value: "freshwater", label: "Freshwater", emoji: "🐟" },
+            ] as const
+          ).map((m) => (
+            <Link
+              key={m.value}
+              href={`/browse?market=${m.value}`}
+              aria-current={market === m.value ? "page" : undefined}
+              className={`px-5 h-10 inline-flex items-center gap-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                market === m.value ? "bg-white text-ink shadow-sm" : "text-gray-500 hover:text-ink"
+              }`}
+            >
+              <span aria-hidden>{m.emoji}</span> {m.label}
+            </Link>
+          ))}
         </nav>
       </header>
 
       <BrowseFilters market={market} />
 
-      <p className="text-sm text-gray-500 mb-4">
-        {total} listing{total === 1 ? "" : "s"}
-      </p>
-
       {listings.length === 0 ? (
-        <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-1">No listings match your filters</p>
-          <p className="text-sm">Try widening your search.</p>
+        <div className="text-center py-28 rounded-3xl border border-dashed border-gray-300">
+          <p className="font-display text-3xl text-ink mb-2">Nothing here — yet.</p>
+          <p className="text-sm text-gray-500">No listings match these filters. Try widening your search.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {listings.map((listing) => (
-            <Link
-              key={listing.id}
-              href={`/listings/${listing.id}`}
-              className="relative rounded-xl border border-gray-200 overflow-hidden bg-white hover:shadow-md transition-shadow"
-            >
-              <div className="aspect-square bg-gray-100 flex items-center justify-center text-4xl relative">
-                {listing.photos[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={listing.photos[0]} alt={listing.title} className="w-full h-full object-cover" />
-                ) : (
-                  <span>{LISTING_TYPE_ICONS[listing.listing_type]}</span>
-                )}
-                {listing.featured && (
-                  <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5">
-                    Featured
-                  </span>
-                )}
-              </div>
-              {user && (
-                <div className="absolute top-2 right-2">
-                  <SaveButton listingId={listing.id} initialSaved={savedSet.has(listing.id)} />
-                </div>
-              )}
-              <div className="p-3">
-                <p className="text-xs text-gray-500">{LISTING_TYPE_LABELS[listing.listing_type]}</p>
-                <p className="font-semibold text-sm truncate">{listing.title}</p>
-                <p className="text-sm font-bold">${listing.price.toFixed(2)}</p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  {listing.quantity > 0 && <span className="text-[11px] font-semibold text-gray-900">{listing.quantity} available</span>}
-                  {listing.local_pickup && (
-                    <span className="flex items-center gap-1 text-[11px] text-gray-500">
-                      <MapPin size={11} /> Local
-                    </span>
-                  )}
-                  {listing.shipping_available && (
-                    <span className="flex items-center gap-1 text-[11px] text-gray-500">
-                      <Truck size={11} /> Ships
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10">
+          {listings.map((listing, i) => (
+            <div key={listing.id} className="animate-rise" style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}>
+              <ListingCard listing={listing} saved={user ? savedSet.has(listing.id) : undefined} />
+            </div>
           ))}
         </div>
       )}

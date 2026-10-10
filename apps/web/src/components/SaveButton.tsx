@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Heart } from "lucide-react";
 import { addToWatchlist, removeFromWatchlist } from "@reef-market/shared";
 import { apiClient } from "@/lib/api-client";
 
@@ -39,10 +40,16 @@ export function SaveButton({
       aria-label={saved ? "Remove from saved" : "Save listing"}
       className={
         className ??
-        "w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-base shadow hover:scale-105 transition-transform"
+        "w-9 h-9 rounded-full bg-white/85 backdrop-blur text-ink flex items-center justify-center shadow-sm hover:bg-white hover:scale-105 active:scale-95 transition-all"
       }
     >
-      {saved ? "❤️" : "🤍"}
+      <Heart
+        size={17}
+        strokeWidth={1.9}
+        fill={saved ? "currentColor" : "none"}
+        style={saved ? { color: "var(--color-coral)" } : undefined}
+        className="transition-transform duration-300"
+      />
     </button>
   );
 }

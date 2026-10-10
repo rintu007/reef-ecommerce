@@ -93,7 +93,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <div className="pb-28">
       <div className="max-w-3xl mx-auto">
         {/* Photo gallery */}
-        <div className="relative aspect-square bg-gray-100 sm:rounded-xl sm:mt-6 overflow-hidden">
+        <div className="relative aspect-square bg-gray-100 sm:rounded-[2rem] sm:mt-8 overflow-hidden">
           <PhotoGallery photos={photos} title={listing.title} />
           <Link
             href={`/browse?market=${backMarket}`}
@@ -121,13 +121,13 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
 
-        <div className="px-4 sm:px-0 pt-4 space-y-4">
+        <div className="px-4 sm:px-0 pt-6 space-y-4">
           {/* Title & price */}
           <div>
             <div className="flex items-start justify-between gap-2">
-              <h1 className="text-xl font-bold leading-tight flex-1">{listing.title}</h1>
+              <h1 className="font-display text-4xl sm:text-5xl leading-[1] text-ink flex-1">{listing.title}</h1>
               <div className="shrink-0 text-right">
-                <p className="text-xl font-bold text-blue-600">${listing.price.toFixed(2)}</p>
+                <p className="font-display text-4xl leading-none text-blue-600">${listing.price.toFixed(2)}</p>
                 {listing.pickup_price != null && listing.shipping_available && listing.local_pickup && (
                   <p className="text-xs text-emerald-600 font-medium mt-0.5">📍 Pickup: ${listing.pickup_price.toFixed(2)}</p>
                 )}
@@ -396,7 +396,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-paper/85 backdrop-blur-xl border-t border-gray-900/10 px-4 py-3 z-40">
         <div className="max-w-3xl mx-auto flex gap-3 items-center">
           <Link
             href={`/sellers/${listing.seller_id}`}

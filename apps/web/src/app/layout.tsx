@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { EULAGate } from "@/components/EULAGate";
 import { UserPrefsModal } from "@/components/UserPrefsModal";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { CartProvider } from "@/lib/cart-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -18,6 +19,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const displaySerif = Instrument_Serif({
+  variable: "--font-display-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "Reef Market",
   description: "Buy and sell corals, fish, inverts, and aquarium equipment.",
@@ -31,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} antialiased min-h-screen flex flex-col`}
       >
         <LanguageProvider>
           <CartProvider>
@@ -39,7 +47,8 @@ export default function RootLayout({
             <UserPrefsModal />
             <AnnouncementBanner />
             <Header />
-            {children}
+            <div className="flex-1">{children}</div>
+            <Footer />
           </CartProvider>
         </LanguageProvider>
       </body>
