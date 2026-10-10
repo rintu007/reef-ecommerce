@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -57,7 +58,11 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 justify-center px-6 gap-4">
+      <KeyboardAwareScrollView
+        bottomOffset={24}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, gap: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text className="text-2xl font-bold text-foreground mb-1">Reset your password</Text>
         <Text className="text-sm text-muted-foreground -mt-3 mb-2">Enter your email and we&apos;ll send you a reset link.</Text>
 
@@ -87,7 +92,7 @@ export default function ForgotPasswordScreen() {
         <Pressable onPress={() => safeGoBack(router)}>
           <Text className="text-sm text-primary text-center">Back to Sign In</Text>
         </Pressable>
-      </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

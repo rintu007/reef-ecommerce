@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { TextInput } from "@/components/ui/TextInput";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -98,7 +99,11 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 32, gap: 16 }}>
+      <KeyboardAwareScrollView
+        bottomOffset={24}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32, gap: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text className="text-3xl mb-1">🪸</Text>
         <Text className="text-2xl font-bold text-foreground mb-2">
           {mode === "sign-in" ? "Sign In" : "Create Account"}
@@ -189,7 +194,7 @@ export default function SignInScreen() {
           <BookOpen size={14} color={themeColors.mutedForeground} />
           <Text className="text-sm text-muted-foreground text-center">Browse care guides</Text>
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

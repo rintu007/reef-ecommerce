@@ -229,7 +229,14 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = true
+#
+# Left off for now — Resend's sandbox sender (no custom domain verified
+# yet) can only actually deliver to the account owner's own address, and
+# Supabase's native signup flow hard-fails the whole request (500 "Error
+# sending confirmation email") if it can't send the confirmation email, so
+# with this on, signup only worked for one email in the world. Flip back
+# to true once a real sending domain is verified in Resend.
+enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.

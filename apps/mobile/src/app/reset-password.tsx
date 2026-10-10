@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -105,7 +106,11 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 justify-center px-6 gap-4">
+      <KeyboardAwareScrollView
+        bottomOffset={24}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, gap: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text className="text-2xl font-bold text-foreground mb-1">Set a new password</Text>
 
         <View>
@@ -128,7 +133,7 @@ export default function ResetPasswordScreen() {
         >
           {loading ? <ActivityIndicator color={themeColors.white} /> : <Text className="text-white font-semibold text-sm">Update Password</Text>}
         </Pressable>
-      </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

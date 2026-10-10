@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Send } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
@@ -85,10 +86,11 @@ export default function ConversationThreadScreen() {
   }
 
   return (
-    // No local KeyboardAvoidingView here — the root layout already wraps
-    // the whole app in one. Nesting a second one along the same axis
-    // double-compensates for the keyboard (each instance independently
-    // pads for the full overlap), so this screen relies on the global one.
+    // The input bar is wrapped in KeyboardStickyView below instead of
+    // wrapping the whole screen in a KeyboardAvoidingView — this is a chat
+    // layout (scrollable history + fixed bottom bar), and sticking just
+    // the bar to the keyboard is the behavior that actually matches what a
+    // chat UI should do, not resizing/padding the whole screen.
     <>
       <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
@@ -124,7 +126,7 @@ export default function ConversationThreadScreen() {
           }}
         />
 
-        <View className="flex-row items-center gap-2 px-4 py-3 border-t border-border">
+        <KeyboardStickyView className="flex-row items-center gap-2 px-4 py-3 border-t border-border bg-background">
           <TextInput
             testID="message-input"
             value={content}
@@ -142,7 +144,7 @@ export default function ConversationThreadScreen() {
           >
             <Send size={16} color={content.trim() ? themeColors.white : themeColors.mutedForeground} />
           </Pressable>
-        </View>
+        </KeyboardStickyView>
       </SafeAreaView>
     </>
   );
