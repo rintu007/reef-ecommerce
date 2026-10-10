@@ -20,3 +20,16 @@ is done there.
   `localhost` or test-only values, and keep store-launch blockers in mind
   (iOS bundle ID, production API URL, live Stripe keys, removing dummy data;
   see `DUMMY_DATA.md`).
+
+## EAS build status updates
+
+When reporting on an in-flight EAS build (checking status, waiting on a
+build the user asked for), lead every update with a status circle plus a
+short plain-text explanation — never a bare emoji with no text:
+- 🟡 while queued or building, with the current elapsed time and whether
+  that's normal pace or running long.
+- 🟢 once the APK has been installed on the connected device (or the
+  download link is ready, if no device is connected) — state clearly what
+  just happened.
+- 🔴 if the build errored — state the actual root cause from the build log,
+  not just "it failed".
