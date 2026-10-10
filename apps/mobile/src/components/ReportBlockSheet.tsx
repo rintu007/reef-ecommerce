@@ -1,6 +1,7 @@
 import { blockUser, createReport } from "@reef-market/shared";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
+import { TextInput } from "@/components/ui/TextInput";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 

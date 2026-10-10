@@ -8,7 +8,8 @@ import {
   type SavedSearch,
 } from "@reef-market/shared";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { TextInput } from "@/components/ui/TextInput";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";

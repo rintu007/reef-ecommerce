@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { forgotPassword } from "@reef-market/shared";

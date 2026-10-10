@@ -2,7 +2,8 @@ import { submitSupportMessage, type SupportMessageInput } from "@reef-market/sha
 import { router } from "expo-router";
 import { ArrowLeft, ChevronDown, ChevronUp, Mail, Phone } from "lucide-react-native";
 import { useState } from "react";
-import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";

@@ -1,10 +1,10 @@
 import { HELP_CATEGORIES, listListings, type Listing } from "@reef-market/shared";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { useFocusEffect, useRouter } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
 import { BookOpen, ChevronRight, ShoppingBag, ShoppingCart, Star, Waves } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
@@ -271,6 +271,19 @@ export default function HomeScreen() {
   const { count: cartCount } = useCart();
   const [activeTab, setActiveTab] = useState<HomeTab>("browse");
 
+  // Imperative, not the declarative <StatusBar> component — tab screens
+  // stay mounted after their first visit, so a mounted <StatusBar
+  // style="light"/> here would never unmount and hand control back when
+  // another tab (all light-background) becomes active. Setting it on
+  // focus/blur instead means it's always correct for whichever screen is
+  // actually showing, regardless of what else is mounted.
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle("light");
+      return () => setStatusBarStyle("dark");
+    }, [])
+  );
+
   const tabs: { id: HomeTab; label: string; icon: typeof Waves }[] = [
     { id: "browse", label: "Browse", icon: Waves },
     { id: "sell", label: "Sell", icon: ShoppingBag },
@@ -282,9 +295,9 @@ export default function HomeScreen() {
       {/* Gradient is the outermost layer so it extends behind the status bar
           instead of leaving a stray white/background-colored strip up top —
           SafeAreaView below only adds the top inset as padding, not a
-          background fill. StatusBar is set to "light" so the time/battery/
-          signal icons stay readable against this dark background. */}
-      <StatusBar style="light" />
+          background fill. The useFocusEffect above sets the status bar
+          style to "light" so the time/battery/signal icons stay readable
+          against this dark background. */}
       <SafeAreaView edges={["top"]} className="flex-1" style={{ backgroundColor: "transparent" }}>
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="px-5 pt-6 pb-4 items-center">
