@@ -19,20 +19,77 @@ function resend(): Resend {
  */
 const FROM = "Reef Market <onboarding@resend.dev>";
 
+/**
+ * Shared branded shell for every outbound email — same gradient header
+ * (🪸 Reef Market) and color scheme as the app itself (primary #0b81b7 →
+ * #0a4a6b, matching the mobile Home screen's hero gradient), so a password
+ * reset or a broadcast doesn't look like a different, unbranded product.
+ * Table-based layout deliberately (not flexbox/grid) — this is the one
+ * place CSS support can't be assumed; most email clients still render
+ * against a decade-old subset of CSS.
+ */
+function wrapEmail(bodyHtml: string): string {
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin:0;padding:0;background-color:#eef2f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2f6;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(23,29,38,0.08);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#0b81b7,#0a4a6b);padding:36px 32px 30px;text-align:center;">
+                <div style="font-size:34px;line-height:1;margin-bottom:10px;">🪸</div>
+                <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;">Reef Market</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px;">The aquarium hobbyist marketplace</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px;">
+                ${bodyHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 28px;border-top:1px solid #eef2f6;text-align:center;">
+                <div style="font-size:12px;color:#94a3b8;">Reef Market — built for aquarium hobbyists.</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+const emailHeading = (text: string) =>
+  `<h1 style="margin:0 0 12px;font-size:21px;font-weight:800;color:#171d26;">${text}</h1>`;
+
+const emailParagraph = (html: string) =>
+  `<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#475569;">${html}</p>`;
+
+const emailButton = (href: string, label: string) =>
+  `<a href="${href}" style="display:inline-block;padding:14px 28px;background-color:#0b81b7;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">${label}</a>`;
+
 /** Legacy parity: reef-trade-flow's Support page "Send Us a Message" contact form. */
 export async function sendSupportMessage(input: { name: string; email: string; type: string; message: string }): Promise<void> {
+  const body = `
+    ${emailHeading(input.type === "feedback" ? "New feedback" : "New support question")}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;width:80px;">Name</td><td style="padding:4px 0;font-size:14px;color:#171d26;font-weight:600;">${input.name}</td></tr>
+      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;">Email</td><td style="padding:4px 0;font-size:14px;color:#171d26;font-weight:600;">${input.email}</td></tr>
+    </table>
+    <div style="background-color:#f8fafc;border-radius:10px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#334155;">${input.message}</div>
+  `;
   const { error } = await resend().emails.send({
     from: FROM,
     to: "Andrew@freedomrisingnow.org",
     replyTo: input.email,
     subject: `[Reef Market Support] ${input.type === "feedback" ? "Feedback" : "Question"} from ${input.name}`,
-    html: `
-      <p><strong>Name:</strong> ${input.name}</p>
-      <p><strong>Email:</strong> ${input.email}</p>
-      <p><strong>Type:</strong> ${input.type}</p>
-      <p><strong>Message:</strong></p>
-      <p style="white-space: pre-wrap;">${input.message}</p>
-    `,
+    html: wrapEmail(body),
   });
   if (error) throw new Error(`Failed to send support message: ${error.message}`);
 }
@@ -44,41 +101,45 @@ export async function sendSavedSearchMatchEmail(
   searchNames: string[]
 ): Promise<void> {
   const listingUrl = `${env.appUrl}/listings/${listing.id}`;
-  const photo = listing.photos[0] ? `<img src="${listing.photos[0]}" style="max-width:100%;border-radius:8px;margin-bottom:12px;" />` : "";
+  const photo = listing.photos[0]
+    ? `<img src="${listing.photos[0]}" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin-bottom:16px;" />`
+    : "";
   const searchList = searchNames.map((n) => `• ${n}`).join("<br>");
+
+  const body = `
+    ${emailHeading("A new listing matches your search")}
+    ${emailParagraph("A listing was just posted that matches one of your saved searches.")}
+    ${photo}
+    <h2 style="margin:0 0 4px;font-size:17px;font-weight:700;color:#171d26;">${listing.title}</h2>
+    <p style="margin:0 0 4px;font-size:24px;font-weight:800;color:#0b81b7;">$${listing.price}</p>
+    ${listing.location ? `<p style="margin:0 0 16px;font-size:13px;color:#94a3b8;">📍 ${listing.location}</p>` : '<div style="margin-bottom:12px;"></div>'}
+    <p style="margin:0 0 20px;font-size:12px;color:#94a3b8;">Matched your saved search${searchNames.length > 1 ? "es" : ""}:<br>${searchList}</p>
+    ${emailButton(listingUrl, "View Listing")}
+    <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;">You can manage your saved searches from your profile.</p>
+  `;
 
   const { error } = await resend().emails.send({
     from: FROM,
     to,
     subject: `New listing match: ${listing.title}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-        <h2 style="margin-bottom:4px;">New listing matches your saved search</h2>
-        <p style="color:#666;margin-top:0;">A listing was just posted that matches one of your saved searches.</p>
-        ${photo}
-        <h3 style="margin-bottom:4px;">${listing.title}</h3>
-        <p style="font-size:22px;font-weight:bold;color:#0ea5e9;margin:4px 0;">$${listing.price}</p>
-        ${listing.location ? `<p style="color:#666;font-size:14px;">📍 ${listing.location}</p>` : ""}
-        <p style="font-size:13px;color:#888;margin-top:12px;">Matched your saved search${searchNames.length > 1 ? "es" : ""}:<br>${searchList}</p>
-        <a href="${listingUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">View Listing</a>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">You can manage your saved searches in your profile. Reef Market.</p>
-      </div>
-    `,
+    html: wrapEmail(body),
   });
   if (error) throw new Error(`Failed to send saved-search match email: ${error.message}`);
 }
 
 export async function sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
+  const body = `
+    ${emailHeading("Reset your password")}
+    ${emailParagraph("Someone requested a password reset for your Reef Market account. Click the button below to choose a new one.")}
+    ${emailButton(resetLink, "Reset Password")}
+    <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#94a3b8;">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+    <p style="margin:16px 0 0;font-size:12px;color:#cbd5e1;word-break:break-all;">Or paste this link into your browser:<br>${resetLink}</p>
+  `;
   const { error } = await resend().emails.send({
     from: FROM,
     to,
     subject: "Reset your Reef Market password",
-    html: `
-      <p>Someone requested a password reset for your Reef Market account.</p>
-      <p><a href="${resetLink}">Click here to reset your password</a></p>
-      <p>If you didn't request this, you can safely ignore this email.</p>
-      <p style="color:#888;font-size:12px">${resetLink}</p>
-    `,
+    html: wrapEmail(body),
   });
   if (error) throw new Error(`Failed to send password reset email: ${error.message}`);
 }
@@ -100,7 +161,11 @@ export async function sendAnnouncementBroadcast(
   subject: string,
   message: string
 ): Promise<{ sent: number; failed: number }> {
-  const html = `<p>${message.replace(/\n/g, "<br/>")}</p>`;
+  const body = `
+    ${emailHeading(subject)}
+    <div style="font-size:14px;line-height:1.65;color:#334155;white-space:pre-wrap;">${message.replace(/\n/g, "<br/>")}</div>
+  `;
+  const html = wrapEmail(body);
   let sent = 0;
   let failed = 0;
 

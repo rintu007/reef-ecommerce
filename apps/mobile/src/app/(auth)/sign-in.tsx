@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { TextInput } from "@/components/ui/TextInput";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Linking from "expo-linking";
@@ -83,8 +84,13 @@ export default function SignInScreen() {
         }
       }
       // AuthProvider's onAuthStateChange picks up the new session from here.
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+    } catch {
+      // The raw Supabase/provider error here is almost always "this
+      // provider isn't configured yet" (not something a retry fixes), not
+      // a transient failure — showing it verbatim ("400 validation
+      // failed") just reads as a broken app rather than an unfinished
+      // setup step.
+      setError(`${SOCIAL_PROVIDERS.find((p) => p.provider === provider)?.label.replace("Continue with ", "") ?? "Social"} sign-in isn't set up yet — use email instead.`);
     } finally {
       setSocialLoading(null);
     }
@@ -143,11 +149,10 @@ export default function SignInScreen() {
               </Pressable>
             )}
           </View>
-          <TextInput
+          <PasswordInput
             testID="sign-in-password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
             placeholderTextColor={themeColors.mutedForeground}
             className="border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground"
           />

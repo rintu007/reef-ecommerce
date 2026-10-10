@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { TextInput } from "@/components/ui/TextInput";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Linking from "expo-linking";
@@ -110,11 +110,10 @@ export default function ResetPasswordScreen() {
 
         <View>
           <Text className="text-sm font-medium text-muted-foreground mb-1">New password</Text>
-          <TextInput
+          <PasswordInput
             testID="reset-password-input"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
             placeholderTextColor={themeColors.mutedForeground}
             className="border border-border bg-card rounded-xl px-3 py-2.5 text-sm text-foreground"
           />
