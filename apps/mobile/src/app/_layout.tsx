@@ -2,6 +2,7 @@ import "../global.css";
 import { Stack } from "expo-router";
 import { setStatusBarStyle } from "expo-status-bar";
 import { useEffect } from "react";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { EULAGate } from "@/components/EULAGate";
 import { UserPrefsModal } from "@/components/UserPrefsModal";
@@ -28,7 +29,17 @@ export default function RootLayout() {
       <LanguageProvider>
         <CartProvider>
           <StripeProvider>
-            <>
+            {/*
+              One KeyboardAvoidingView around the whole navigation stack
+              instead of per-screen ones — every screen's TextInputs get
+              keyboard-safe behavior for free, and it's a single place to
+              reason about instead of 20+ near-identical wrappers that are
+              easy to forget on a new screen. "padding" on iOS (which never
+              resizes the window on its own); undefined on Android, where
+              merely having a KeyboardAvoidingView mounted is what makes
+              the view make room for the keyboard.
+            */}
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
               <EULAGate />
               <UserPrefsModal />
               <AnnouncementBanner />
@@ -36,7 +47,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
               </Stack>
-            </>
+            </KeyboardAvoidingView>
           </StripeProvider>
         </CartProvider>
       </LanguageProvider>

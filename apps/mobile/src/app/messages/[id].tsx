@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Send } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
@@ -85,7 +85,11 @@ export default function ConversationThreadScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 bg-background">
+    // No local KeyboardAvoidingView here — the root layout already wraps
+    // the whole app in one. Nesting a second one along the same axis
+    // double-compensates for the keyboard (each instance independently
+    // pads for the full overlap), so this screen relies on the global one.
+    <>
       <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
@@ -140,6 +144,6 @@ export default function ConversationThreadScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
