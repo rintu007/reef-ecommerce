@@ -71,7 +71,7 @@ function PreviewRow({ market, label }: { market: "saltwater" | "freshwater"; lab
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-xs font-bold text-white/70 uppercase tracking-widest">{label} · New</Text>
         </View>
-        <View className="flex-row" style={{ gap: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
           {[0, 1, 2].map((i) => (
             <View key={i} className="w-[130px] rounded-xl overflow-hidden bg-white/10">
               <Skeleton color="rgba(255,255,255,0.15)" style={{ width: "100%", height: 90 }} className="rounded-none" />
@@ -81,7 +81,7 @@ function PreviewRow({ market, label }: { market: "saltwater" | "freshwater"; lab
               </View>
             </View>
           ))}
-        </View>
+        </ScrollView>
       </View>
     );
   }
