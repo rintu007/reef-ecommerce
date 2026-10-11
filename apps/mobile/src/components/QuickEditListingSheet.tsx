@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Camera } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TextInput } from "@/components/ui/TextInput";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
@@ -38,6 +39,7 @@ export function QuickEditListingSheet({
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   // Reset the form to the current listing's values every time the sheet opens.
   useEffect(() => {
@@ -99,7 +101,11 @@ export function QuickEditListingSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/40" onPress={onClose}>
-        <Pressable className="mt-auto bg-card rounded-t-2xl p-4 gap-3" onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          className="mt-auto bg-card rounded-t-2xl px-4 pt-4 gap-3"
+          style={{ paddingBottom: 16 + insets.bottom }}
+          onPress={(e) => e.stopPropagation()}
+        >
           <Text className="text-base font-semibold text-foreground">Quick Edit</Text>
 
           <ScrollView contentContainerStyle={{ gap: 12 }} style={{ maxHeight: 420 }}>

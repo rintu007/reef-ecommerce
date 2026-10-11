@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import type Stripe from "stripe";
 import { env } from "@/lib/server/env";
 import { stripe } from "@/lib/server/stripe";
-import { cancelOrderByPaymentIntent, confirmOrderPayment } from "@/lib/server/orders";
+import { cancelOrderByPaymentIntent, confirmOrderPayment, notifyNewOrder } from "@/lib/server/orders";
 import { syncPayoutAccountStatus } from "@/lib/server/payouts";
 import { syncSubscriptionFromCheckoutSession, syncSubscriptionFromStripeObject } from "@/lib/server/subscriptions";
 
@@ -30,7 +30,8 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const intent = event.data.object as Stripe.PaymentIntent;
-        await confirmOrderPayment(intent.id);
+        const orderId = await confirmOrderPayment(intent.id);
+        if (orderId) after(() => notifyNewOrder(orderId).catch((err) => console.error("notifyNewOrder failed", err)));
         break;
       }
       case "payment_intent.payment_failed":

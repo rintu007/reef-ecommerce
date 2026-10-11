@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { KeyboardProvider, KeyboardStickyView } from "react-native-keyboard-controller";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { EULAGate } from "@/components/EULAGate";
+import { PushNotificationRegistrar } from "@/components/PushNotificationRegistrar";
 import { UserPrefsModal } from "@/components/UserPrefsModal";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart-context";
@@ -51,6 +52,7 @@ export default function RootLayout() {
               <EULAGate />
               <UserPrefsModal />
               <AnnouncementBanner />
+              <PushNotificationRegistrar />
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />

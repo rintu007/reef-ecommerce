@@ -1,6 +1,7 @@
 import { Check, ShieldCheck, X } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { themeColors } from "@/lib/theme-colors";
 
 /**
@@ -11,6 +12,7 @@ import { themeColors } from "@/lib/theme-colors";
  */
 export function BuyerAgreementModal({ onAgree, onClose }: { onAgree: () => void; onClose: () => void }) {
   const [checked, setChecked] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -126,7 +128,7 @@ export function BuyerAgreementModal({ onAgree, onClose }: { onAgree: () => void;
             </View>
           </ScrollView>
 
-          <View className="px-5 pt-3 pb-6 border-t border-border gap-3">
+          <View className="px-5 pt-3 border-t border-border gap-3" style={{ paddingBottom: 24 + insets.bottom }}>
             <Pressable
               testID="buyer-agreement-checkbox"
               onPress={() => setChecked((c) => !c)}

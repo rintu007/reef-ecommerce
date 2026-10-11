@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { sendMessageSchema } from "@reef-market/shared";
 import { requireUser } from "@/lib/server/auth";
 import { apiError, handleRouteError } from "@/lib/server/http";
-import { sendMessage } from "@/lib/server/messages";
+import { notifyNewMessage, sendMessage } from "@/lib/server/messages";
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     }
 
     const message = await sendMessage(user.id, input);
+    after(() => notifyNewMessage(message, input.recipient_id).catch((err) => console.error("notifyNewMessage failed", err)));
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     return handleRouteError(error);

@@ -51,7 +51,14 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Reef Market to use your location to find nearby local-pickup listings."
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "color": "#0b81b7",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

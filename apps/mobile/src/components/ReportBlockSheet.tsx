@@ -1,6 +1,7 @@
 import { blockUser, createReport } from "@reef-market/shared";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TextInput } from "@/components/ui/TextInput";
 import { apiClient } from "@/lib/api-client";
 import { themeColors } from "@/lib/theme-colors";
@@ -33,6 +34,7 @@ export function ReportBlockSheet({
   const [blockReason, setBlockReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   function handleClose() {
     setPanel("menu");
@@ -76,7 +78,11 @@ export function ReportBlockSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <Pressable className="flex-1 bg-black/40" onPress={handleClose}>
-        <Pressable className="mt-auto bg-card rounded-t-2xl p-4 gap-1" onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          className="mt-auto bg-card rounded-t-2xl px-4 pt-4 gap-1"
+          style={{ paddingBottom: 16 + insets.bottom }}
+          onPress={(e) => e.stopPropagation()}
+        >
           {panel === "menu" && (
             <>
               <Pressable testID="report-listing-option" onPress={() => setPanel("report")} className="py-3">

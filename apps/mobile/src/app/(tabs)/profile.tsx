@@ -9,6 +9,7 @@ import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthGate } from "@/components/AuthGate";
 import { BlockedUsersSection } from "@/components/BlockedUsersSection";
+import { EarningsSection } from "@/components/EarningsSection";
 import { PayoutsSection } from "@/components/PayoutsSection";
 import { PromoCodeSection } from "@/components/PromoCodeSection";
 import { SavedSearchesSection } from "@/components/SavedSearchesSection";
@@ -169,6 +170,24 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
         <Text className="text-xl font-bold text-foreground">My Profile</Text>
 
+        <View className="flex-row items-center gap-4 rounded-xl border border-border bg-card p-4">
+          <View className="w-14 h-14 rounded-full overflow-hidden bg-muted items-center justify-center shrink-0">
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={{ width: 56, height: 56 }} contentFit="cover" />
+            ) : (
+              <Text className="text-xl">👤</Text>
+            )}
+          </View>
+          <View className="flex-1 min-w-0">
+            <Text className="text-base font-bold text-foreground" numberOfLines={1}>
+              {profile?.display_name || "Add your name"}
+            </Text>
+            <Text className="text-sm text-muted-foreground" numberOfLines={1}>
+              {session?.user.email}
+            </Text>
+          </View>
+        </View>
+
         <View className="flex-row gap-3">
           <Pressable onPress={() => router.push("/saved")} className="flex-1 flex-row items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
             <Heart size={16} color={themeColors.foreground} />
@@ -192,6 +211,7 @@ export default function ProfileScreen() {
 
         <SubscriptionSection />
         <PayoutsSection />
+        <EarningsSection />
         <SavedSearchesSection />
         <PromoCodeSection />
         <BlockedUsersSection />

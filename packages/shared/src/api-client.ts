@@ -269,6 +269,10 @@ export function getUnreadMessageCount(client: ApiClient) {
   return client.get<{ count: number }>("/api/conversations/unread-count");
 }
 
+export function registerPushToken(client: ApiClient, token: string) {
+  return client.post<{ ok: true }>("/api/push-tokens", { token });
+}
+
 export interface ConversationThread {
   id: string;
   listing_id: string | null;
@@ -644,6 +648,19 @@ export function createPayoutOnboardingLink(client: ApiClient, params?: { returnU
     return_url: params?.returnUrl,
     refresh_url: params?.refreshUrl,
   });
+}
+
+export interface SellerEarningsSummary {
+  payoutsEnabled: boolean;
+  lifetimeEarned: number;
+  stripeAvailable: number;
+  stripePending: number;
+  lastSold: { listingTitle: string; amount: number; createdAt: string } | null;
+  lastBought: { listingTitle: string; amount: number; createdAt: string } | null;
+}
+
+export function getSellerEarnings(client: ApiClient) {
+  return client.get<SellerEarningsSummary>("/api/payouts/earnings");
 }
 
 export interface SellerDashboardMetrics {

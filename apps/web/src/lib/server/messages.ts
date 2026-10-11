@@ -1,5 +1,6 @@
 import type { Message, SendMessageInput } from "@reef-market/shared";
 import { supabaseAdmin } from "./supabase-admin";
+import { sendPushNotification } from "./push";
 
 export interface ConversationSummary {
   id: string;
@@ -220,4 +221,16 @@ export async function sendMessage(senderId: string, input: SendMessageInput): Pr
     .single();
   if (error) throw error;
   return data as Message;
+}
+
+/** Call via after() from the route handler, not inline in sendMessage — a push-send failure should never delay or break the actual message send. */
+export async function notifyNewMessage(message: Message, recipientId: string): Promise<void> {
+  const db = supabaseAdmin();
+  const { data: sender } = await db.from("profiles").select("display_name").eq("id", message.sender_id).maybeSingle();
+  const senderName = sender?.display_name ?? "Someone";
+  await sendPushNotification(recipientId, {
+    title: senderName,
+    body: message.content.length > 120 ? `${message.content.slice(0, 120)}…` : message.content,
+    data: { type: "message", conversationId: message.conversation_id },
+  });
 }

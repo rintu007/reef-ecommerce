@@ -1,4 +1,4 @@
-import type { SellerPayoutStatus } from "@reef-market/shared";
+import { fromCents, type SellerPayoutStatus } from "@reef-market/shared";
 import { stripe } from "./stripe";
 import { supabaseAdmin } from "./supabase-admin";
 import { env } from "./env";
@@ -83,6 +83,75 @@ export async function syncPayoutAccountStatus(stripeAccountId: string, payoutsEn
     .from("seller_payout_accounts")
     .update({ payouts_enabled: payoutsEnabled, onboarding_complete: detailsSubmitted })
     .eq("stripe_account_id", stripeAccountId);
+}
+
+export interface SellerEarningsSummary {
+  payoutsEnabled: boolean;
+  /** Sum of (total_charged - platform_fee) across every completed order as seller — the exact amount Stripe's transfer_data.destination actually sent to this seller's connected account, not GMV. */
+  lifetimeEarned: number;
+  /** From Stripe's own balance for this connected account — what's already payable out vs. still clearing. Stripe Express accounts pay out automatically on their own schedule; this isn't an app-held wallet. */
+  stripeAvailable: number;
+  stripePending: number;
+  lastSold: { listingTitle: string; amount: number; createdAt: string } | null;
+  lastBought: { listingTitle: string; amount: number; createdAt: string } | null;
+}
+
+export async function getSellerEarningsSummary(userId: string): Promise<SellerEarningsSummary> {
+  const db = supabaseAdmin();
+
+  const { data: payoutAccount } = await db
+    .from("seller_payout_accounts")
+    .select("stripe_account_id, payouts_enabled")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const { data: completedSales } = await db
+    .from("orders")
+    .select("total_charged, platform_fee")
+    .eq("seller_id", userId)
+    .eq("status", "completed");
+  const lifetimeEarned = (completedSales ?? []).reduce((sum, o) => sum + (o.total_charged - o.platform_fee), 0);
+
+  const { data: lastSoldRow } = await db
+    .from("orders")
+    .select("listing_title, total_charged, platform_fee, created_at")
+    .eq("seller_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: lastBoughtRow } = await db
+    .from("orders")
+    .select("listing_title, total_charged, created_at")
+    .eq("buyer_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let stripeAvailable = 0;
+  let stripePending = 0;
+  if (payoutAccount?.stripe_account_id && payoutAccount.payouts_enabled) {
+    try {
+      const balance = await stripe().balance.retrieve({}, { stripeAccount: payoutAccount.stripe_account_id });
+      stripeAvailable = fromCents(balance.available.find((b) => b.currency === "usd")?.amount ?? 0);
+      stripePending = fromCents(balance.pending.find((b) => b.currency === "usd")?.amount ?? 0);
+    } catch {
+      // best-effort — earnings/last-sold info above is still useful without it
+    }
+  }
+
+  return {
+    payoutsEnabled: !!payoutAccount?.payouts_enabled,
+    lifetimeEarned,
+    stripeAvailable,
+    stripePending,
+    lastSold: lastSoldRow
+      ? { listingTitle: lastSoldRow.listing_title, amount: lastSoldRow.total_charged - lastSoldRow.platform_fee, createdAt: lastSoldRow.created_at }
+      : null,
+    lastBought: lastBoughtRow
+      ? { listingTitle: lastBoughtRow.listing_title, amount: lastBoughtRow.total_charged, createdAt: lastBoughtRow.created_at }
+      : null,
+  };
 }
 
 /** Only covers sellers who've started Connect onboarding at least once — no row exists for a seller who never clicked "Connect Stripe". */
