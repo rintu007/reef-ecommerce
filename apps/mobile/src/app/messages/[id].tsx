@@ -92,7 +92,13 @@ export default function ConversationThreadScreen() {
     // the bar to the keyboard is the behavior that actually matches what a
     // chat UI should do, not resizing/padding the whole screen.
     <>
-      <SafeAreaView edges={["top"]} className="flex-1 bg-background">
+      {/* "bottom" edge matters here specifically because this screen's
+          input bar is the last thing in the layout with nothing below it —
+          without it, Android's on-screen nav bar (3-button mode) sits
+          right on top of the message input, same spot a user needs to tap
+          to type. Tab screens don't need this since the tab bar itself
+          already reserves that space. */}
+      <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-row items-center gap-3 px-4 pt-2 pb-3 border-b border-border">
           <Pressable onPress={() => safeGoBack(router)} className="w-9 h-9 items-center justify-center -ml-2">

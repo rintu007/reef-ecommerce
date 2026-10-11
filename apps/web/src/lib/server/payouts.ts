@@ -26,7 +26,12 @@ export async function getPayoutStatus(userId: string): Promise<PayoutStatus> {
  * "Connect Stripe" always creates a new account under this app's keys rather
  * than trusting a pre-existing stripe_account_id value.
  */
-export async function createOnboardingLink(userId: string, email: string): Promise<string> {
+export async function createOnboardingLink(
+  userId: string,
+  email: string,
+  returnUrl?: string,
+  refreshUrl?: string
+): Promise<string> {
   const db = supabaseAdmin();
   const { data: existing } = await db
     .from("seller_payout_accounts")
@@ -60,8 +65,12 @@ export async function createOnboardingLink(userId: string, email: string): Promi
 
   const link = await stripe().accountLinks.create({
     account: accountId,
-    refresh_url: `${env.appUrl}/profile?stripe=refresh`,
-    return_url: `${env.appUrl}/profile?stripe=return`,
+    // Mobile passes its own reefmarket:// deep link here so Stripe hands
+    // the user back to the native app instead of stranding them on the web
+    // profile page in an in-app browser tab they have to manually back out
+    // of — see apps/mobile/src/lib/use-payout-status.ts.
+    refresh_url: refreshUrl ?? `${env.appUrl}/profile?stripe=refresh`,
+    return_url: returnUrl ?? `${env.appUrl}/profile?stripe=return`,
     type: "account_onboarding",
   });
   return link.url;

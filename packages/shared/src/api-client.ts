@@ -264,6 +264,11 @@ export function listConversations(client: ApiClient) {
   return client.get<{ conversations: ConversationSummary[] }>("/api/conversations");
 }
 
+/** Lightweight total-unread count — for a tab badge, where fetching the full conversation list just to sum one number would be wasteful. */
+export function getUnreadMessageCount(client: ApiClient) {
+  return client.get<{ count: number }>("/api/conversations/unread-count");
+}
+
 export interface ConversationThread {
   id: string;
   listing_id: string | null;
@@ -633,8 +638,12 @@ export function getPayoutStatus(client: ApiClient) {
   return client.get<{ connected: boolean; payoutsEnabled: boolean }>("/api/payouts/status");
 }
 
-export function createPayoutOnboardingLink(client: ApiClient) {
-  return client.post<{ url: string }>("/api/payouts/onboarding-link");
+/** `returnUrl`/`refreshUrl` let mobile pass its own deep link so Stripe hands the user back to the app instead of a web page — web callers omit both and get the default web URLs. */
+export function createPayoutOnboardingLink(client: ApiClient, params?: { returnUrl?: string; refreshUrl?: string }) {
+  return client.post<{ url: string }>("/api/payouts/onboarding-link", {
+    return_url: params?.returnUrl,
+    refresh_url: params?.refreshUrl,
+  });
 }
 
 export interface SellerDashboardMetrics {

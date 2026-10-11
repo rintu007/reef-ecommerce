@@ -15,6 +15,27 @@ export interface ConversationSummary {
   unread_count: number;
 }
 
+/** Lightweight total-unread count for a tab badge — avoids building the full conversation list (profiles, last messages) just to sum one number. */
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  const db = supabaseAdmin();
+  const { data: conversations, error } = await db
+    .from("conversations")
+    .select("id")
+    .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
+  if (error) throw error;
+  const conversationIds = (conversations ?? []).map((c) => c.id);
+  if (conversationIds.length === 0) return 0;
+
+  const { count, error: countError } = await db
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .in("conversation_id", conversationIds)
+    .eq("read", false)
+    .neq("sender_id", userId);
+  if (countError) throw countError;
+  return count ?? 0;
+}
+
 export async function listConversations(userId: string): Promise<ConversationSummary[]> {
   const db = supabaseAdmin();
   const { data: conversations, error } = await db

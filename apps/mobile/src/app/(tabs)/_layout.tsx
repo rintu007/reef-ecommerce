@@ -3,6 +3,7 @@ import { BookOpen, Home, MessageCircle, PlusCircle, Search, ShoppingBag, User } 
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/lib/auth-context";
 import { themeColors } from "@/lib/theme-colors";
+import { useUnreadMessageCount } from "@/lib/use-unread-message-count";
 import { CartFab } from "@/components/CartFab";
 
 /**
@@ -15,6 +16,7 @@ import { CartFab } from "@/components/CartFab";
  */
 export default function TabsLayout() {
   const { loading, session } = useAuth();
+  const unreadCount = useUnreadMessageCount(!!session);
 
   if (loading) {
     return (
@@ -46,7 +48,15 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen name="sell" options={{ title: "Sell", tabBarIcon: ({ color }) => <PlusCircle size={24} color={color} /> }} />
-        <Tabs.Screen name="messages" options={{ title: "Messages", tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} /> }} />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            title: "Messages",
+            tabBarIcon: ({ color }) => <MessageCircle size={24} color={color} />,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            tabBarBadgeStyle: { backgroundColor: themeColors.accent },
+          }}
+        />
         <Tabs.Screen name="orders" options={{ title: "Orders", tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} /> }} />
         <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color }) => <User size={24} color={color} /> }} />
       </Tabs>

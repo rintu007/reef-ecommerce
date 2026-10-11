@@ -27,6 +27,16 @@ export const env = {
   get stripeWebhookSecret() {
     return required("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET);
   },
+  /**
+   * Separate from stripeWebhookSecret because Connect account events
+   * (account.updated for a connected Express account) don't deliver to a
+   * platform-scoped webhook endpoint at all — Stripe requires a distinct
+   * "Connect" webhook endpoint (created with connect: true), which gets
+   * its own signing secret. See api/webhooks/stripe-connect/route.ts.
+   */
+  get stripeConnectWebhookSecret() {
+    return required("STRIPE_CONNECT_WEBHOOK_SECRET", process.env.STRIPE_CONNECT_WEBHOOK_SECRET);
+  },
   get appUrl() {
     return required("NEXT_PUBLIC_APP_URL", process.env.NEXT_PUBLIC_APP_URL);
   },

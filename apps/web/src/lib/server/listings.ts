@@ -58,6 +58,18 @@ export async function queryListings(
     if (blockedIds.length > 0) query = query.not("seller_id", "in", `(${blockedIds.join(",")})`);
   }
 
+  // A listing a seller hasn't finished Stripe Connect onboarding for can't
+  // actually be bought — checkout needs a payouts_enabled destination
+  // account. Shown on the seller's own listings page regardless (so they
+  // know it's posted and can finish setup), but hidden from anyone else —
+  // general browse and a buyer viewing that seller's storefront alike —
+  // so a buyer never lands on a product they can't complete a purchase on.
+  if (!isOwnerOrAdmin && !params.ids) {
+    const { data: payoutEnabled } = await db.from("seller_payout_accounts").select("user_id").eq("payouts_enabled", true);
+    const payoutEnabledIds = (payoutEnabled ?? []).map((p) => p.user_id as string);
+    query = payoutEnabledIds.length > 0 ? query.in("seller_id", payoutEnabledIds) : query.eq("id", "00000000-0000-0000-0000-000000000000");
+  }
+
   if (isOwnerOrAdmin) {
     if (params.status) query = query.eq("status", params.status);
   } else if (!params.ids) {

@@ -1,27 +1,18 @@
-import { createPayoutOnboardingLink } from "@reef-market/shared";
-import * as WebBrowser from "expo-web-browser";
-import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiClient } from "@/lib/api-client";
+import { usePayoutStatus } from "@/lib/use-payout-status";
 import { themeColors } from "@/lib/theme-colors";
 
 export function PayoutSetupPrompt({ onContinue, onSkip }: { onContinue: () => void; onSkip: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { connecting, error, connect } = usePayoutStatus();
 
   async function handleConnect() {
-    setLoading(true);
-    setError(null);
-    try {
-      const { url } = await createPayoutOnboardingLink(apiClient);
-      await WebBrowser.openBrowserAsync(url);
-      onContinue();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start setup. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // connect() always refetches status itself after the browser session
+    // closes — only auto-advance once that refetch actually confirms
+    // Stripe enabled payouts, not just because the browser closed (which
+    // happens whether the user finished onboarding or just backed out).
+    const status = await connect();
+    if (status.payoutsEnabled) onContinue();
   }
 
   return (
@@ -99,10 +90,10 @@ export function PayoutSetupPrompt({ onContinue, onSkip }: { onContinue: () => vo
         <View className="px-5 pb-4 gap-3">
           <Pressable
             onPress={handleConnect}
-            disabled={loading}
+            disabled={connecting}
             className="h-12 rounded-xl items-center justify-center bg-primary flex-row gap-2"
           >
-            {loading ? <ActivityIndicator color={themeColors.white} /> : <Text className="text-white font-bold">💰 Connect Payout Account</Text>}
+            {connecting ? <ActivityIndicator color={themeColors.white} /> : <Text className="text-white font-bold">💰 Connect Payout Account</Text>}
           </Pressable>
           <Pressable onPress={onSkip} className="h-10 items-center justify-center">
             <Text className="text-sm text-muted-foreground text-center">
