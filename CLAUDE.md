@@ -33,3 +33,14 @@ short plain-text explanation — never a bare emoji with no text:
   just happened.
 - 🔴 if the build errored — state the actual root cause from the build log,
   not just "it failed".
+
+Don't try to play a system sound (afplay/osascript beep/say) on
+completion — tested and confirmed these report success but produce no
+audible output; this execution context is sandboxed away from the
+real audio session even though it's otherwise the user's own Mac.
+
+Use the PushNotification tool instead when a build finishes (🟢 or 🔴)
+during a background wakeup check — it sends a real desktop/phone
+notification. It silently no-ops if the terminal is already active
+(the user is watching), which is correct, not a failure — the whole
+point is covering the case where they've stepped away.

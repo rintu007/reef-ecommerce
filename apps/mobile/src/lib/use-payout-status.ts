@@ -23,12 +23,16 @@ export interface PayoutStatusState {
  * payout status afterward, so the app kept asking to connect even after a
  * seller fully completed onboarding (confirmed on Stripe's side).
  *
- * openAuthSessionAsync instead, with a reefmarket:// deep link as the
- * return_url, so Stripe hands the user back into the app — then always
- * refetch status once the session closes, regardless of how it closed,
- * since the authoritative source is our own DB (kept in sync by the
- * Connect webhook — see api/webhooks/stripe-connect/route.ts), not
- * whatever happened in the browser.
+ * openAuthSessionAsync instead, watching for the reefmarket:// deep link.
+ * Stripe's account_links API rejects a custom scheme outright for
+ * return_url/refresh_url ("Not a valid URL" — it must be real https), so
+ * those still point at a plain web page (apps/web/payout-return) that
+ * immediately hands off to the reefmarket:// deep link itself — that
+ * hop is what openAuthSessionAsync actually detects and closes on.
+ * Either way, always refetch status once the session closes, since the
+ * authoritative source is our own DB (kept in sync by the Connect webhook
+ * — see api/webhooks/stripe-connect/route.ts), not whatever happened in
+ * the browser.
  */
 export function usePayoutStatus(): PayoutStatusState {
   const [loading, setLoading] = useState(true);
@@ -58,9 +62,12 @@ export function usePayoutStatus(): PayoutStatusState {
     setConnecting(true);
     setError(null);
     try {
-      const redirectTo = Linking.createURL("payout-return");
-      const { url } = await createPayoutOnboardingLink(apiClient, { returnUrl: redirectTo, refreshUrl: redirectTo });
-      await WebBrowser.openAuthSessionAsync(url, redirectTo);
+      const deepLink = Linking.createURL("payout-return");
+      // Stripe needs a real https URL — this web page bounces straight to
+      // deepLink itself, which is what openAuthSessionAsync is watching for.
+      const bounceUrl = `${process.env.EXPO_PUBLIC_API_URL}/payout-return`;
+      const { url } = await createPayoutOnboardingLink(apiClient, { returnUrl: bounceUrl, refreshUrl: bounceUrl });
+      await WebBrowser.openAuthSessionAsync(url, deepLink);
       return await fetchStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't start Stripe onboarding");
