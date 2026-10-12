@@ -22,6 +22,7 @@ import { useLanguagePrefs } from "@/lib/language-context";
 import { themeColors } from "@/lib/theme-colors";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { ListingCard } from "@/components/ListingCard";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ListingGridSkeleton } from "@/components/ListingCardSkeleton";
 
 type Market = "saltwater" | "freshwater";
@@ -190,6 +191,7 @@ export default function BrowseScreen() {
           >
             <SlidersHorizontal size={16} color={showFilters ? themeColors.white : themeColors.mutedForeground} />
           </Pressable>
+          <NotificationBell />
           <Pressable testID="cart-button" onPress={() => router.push("/cart")} className="w-10 h-10 rounded-xl bg-muted items-center justify-center">
             <ShoppingCart size={16} color={themeColors.mutedForeground} />
             {cartCount > 0 && (

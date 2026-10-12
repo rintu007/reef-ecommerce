@@ -33,10 +33,17 @@ export async function getAuthenticatedUser(request?: Request): Promise<AuthUser 
   let email: string | undefined;
 
   if (token) {
-    const { data, error } = await supabaseAdmin().auth.getUser(token);
-    if (error || !data.user) return null;
-    userId = data.user.id;
-    email = data.user.email;
+    // getClaims verifies the JWT's signature locally against the project's
+    // cached public keys (this project signs with ES256), instead of
+    // getUser()'s network round trip to the Auth server on every single
+    // authenticated request. The supabaseAdmin() singleton keeps the JWKS
+    // cache warm across requests on the same function instance. Tradeoff:
+    // a signed-out token stays valid until its 1h expiry — standard for JWT
+    // auth. Bans are still enforced below via profiles.banned_at.
+    const { data, error } = await supabaseAdmin().auth.getClaims(token);
+    if (error || !data?.claims?.sub) return null;
+    userId = data.claims.sub;
+    email = data.claims.email as string | undefined;
   } else {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.getUser();
@@ -49,10 +56,10 @@ export async function getAuthenticatedUser(request?: Request): Promise<AuthUser 
 
   const { data: profile, error: profileError } = await supabaseAdmin()
     .from("profiles")
-    .select("role, admin_permissions")
+    .select("role, admin_permissions, banned_at")
     .eq("id", userId)
     .single();
-  if (profileError || !profile) return null;
+  if (profileError || !profile || profile.banned_at) return null;
 
   return {
     id: userId,

@@ -50,23 +50,33 @@ export async function queryListings(
   if (params.sellerId) query = query.eq("seller_id", params.sellerId);
   if (params.ids && params.ids.length > 0) query = query.in("id", params.ids);
 
-  // Hides listings from sellers the viewer has blocked — only applied to the
-  // general browse feed, not when a specific seller's storefront is requested.
-  if (viewer && !params.sellerId) {
-    const { data: blocked } = await db.from("blocked_users").select("blocked_id").eq("blocker_id", viewer.id);
-    const blockedIds = (blocked ?? []).map((b) => b.blocked_id as string);
+  // Both pre-filter lookups are independent of each other, so they run in
+  // parallel rather than as two extra serial round trips before the main
+  // query — each round trip to the DB is the dominant cost per request.
+  //
+  // Blocked sellers: only applied to the general browse feed, not when a
+  // specific seller's storefront is requested.
+  //
+  // Payout-enabled sellers: a listing a seller hasn't finished Stripe
+  // Connect onboarding for can't actually be bought — checkout needs a
+  // payouts_enabled destination account. Shown on the seller's own listings
+  // page regardless (so they know it's posted and can finish setup), but
+  // hidden from anyone else — general browse and a buyer viewing that
+  // seller's storefront alike — so a buyer never lands on a product they
+  // can't complete a purchase on.
+  const needsBlocked = !!viewer && !params.sellerId;
+  const needsPayoutFilter = !isOwnerOrAdmin && !params.ids;
+  const [blockedResult, payoutResult] = await Promise.all([
+    needsBlocked ? db.from("blocked_users").select("blocked_id").eq("blocker_id", viewer!.id) : null,
+    needsPayoutFilter ? db.from("seller_payout_accounts").select("user_id").eq("payouts_enabled", true) : null,
+  ]);
+
+  if (blockedResult) {
+    const blockedIds = (blockedResult.data ?? []).map((b) => b.blocked_id as string);
     if (blockedIds.length > 0) query = query.not("seller_id", "in", `(${blockedIds.join(",")})`);
   }
-
-  // A listing a seller hasn't finished Stripe Connect onboarding for can't
-  // actually be bought — checkout needs a payouts_enabled destination
-  // account. Shown on the seller's own listings page regardless (so they
-  // know it's posted and can finish setup), but hidden from anyone else —
-  // general browse and a buyer viewing that seller's storefront alike —
-  // so a buyer never lands on a product they can't complete a purchase on.
-  if (!isOwnerOrAdmin && !params.ids) {
-    const { data: payoutEnabled } = await db.from("seller_payout_accounts").select("user_id").eq("payouts_enabled", true);
-    const payoutEnabledIds = (payoutEnabled ?? []).map((p) => p.user_id as string);
+  if (payoutResult) {
+    const payoutEnabledIds = (payoutResult.data ?? []).map((p) => p.user_id as string);
     query = payoutEnabledIds.length > 0 ? query.in("seller_id", payoutEnabledIds) : query.eq("id", "00000000-0000-0000-0000-000000000000");
   }
 

@@ -1,8 +1,8 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { env } from "@/lib/server/env";
 import { stripe } from "@/lib/server/stripe";
-import { cancelOrderByPaymentIntent, confirmOrderPayment, notifyNewOrder } from "@/lib/server/orders";
+import { cancelOrderByPaymentIntent, confirmOrderPayment } from "@/lib/server/orders";
 import { syncPayoutAccountStatus } from "@/lib/server/payouts";
 import { syncSubscriptionFromCheckoutSession, syncSubscriptionFromStripeObject } from "@/lib/server/subscriptions";
 
@@ -30,8 +30,9 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const intent = event.data.object as Stripe.PaymentIntent;
-        const orderId = await confirmOrderPayment(intent.id);
-        if (orderId) after(() => notifyNewOrder(orderId).catch((err) => console.error("notifyNewOrder failed", err)));
+        // Seller's "you made a sale" notification comes from the
+        // on_order_status_notify DB trigger on pending → confirmed.
+        await confirmOrderPayment(intent.id);
         break;
       }
       case "payment_intent.payment_failed":

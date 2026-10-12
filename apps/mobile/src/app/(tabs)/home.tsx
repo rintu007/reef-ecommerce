@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api-client";
 import { useCart } from "@/lib/cart-context";
 import { themeColors } from "@/lib/theme-colors";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const PLACEHOLDER_PHOTO = "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=400&q=80";
 
@@ -301,18 +302,21 @@ export default function HomeScreen() {
       <SafeAreaView edges={["top"]} className="flex-1" style={{ backgroundColor: "transparent" }}>
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="px-5 pt-6 pb-4 items-center">
-            <Pressable
-              testID="home-cart-button"
-              onPress={() => router.push("/cart")}
-              className="absolute top-4 right-5 w-10 h-10 rounded-xl bg-white/15 items-center justify-center"
-            >
-              <ShoppingCart size={18} color={themeColors.white} />
-              {cartCount > 0 && (
-                <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent items-center justify-center px-1">
-                  <Text className="text-[9px] font-bold text-white">{cartCount}</Text>
-                </View>
-              )}
-            </Pressable>
+            <View className="absolute top-4 right-5 flex-row gap-2">
+              <NotificationBell variant="dark" />
+              <Pressable
+                testID="home-cart-button"
+                onPress={() => router.push("/cart")}
+                className="w-10 h-10 rounded-xl bg-white/15 items-center justify-center"
+              >
+                <ShoppingCart size={18} color={themeColors.white} />
+                {cartCount > 0 && (
+                  <View className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-accent items-center justify-center px-1">
+                    <Text className="text-[9px] font-bold text-white">{cartCount}</Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
             <View className="flex-row items-center gap-2 mb-1">
               <Text style={{ fontSize: 22 }}>🪸</Text>
               <Text className="text-3xl font-extrabold text-white tracking-tight">Reef Market</Text>

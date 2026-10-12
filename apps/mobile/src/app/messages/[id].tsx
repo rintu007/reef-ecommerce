@@ -1,14 +1,15 @@
 import { getConversationMessages, sendMessage, type ConversationThread, type Message } from "@reef-market/shared";
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Send } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { TextInput } from "@/components/ui/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
+import { setActiveConversationId } from "@/lib/notifications-context";
 import { supabase } from "@/lib/supabase";
 import { themeColors } from "@/lib/theme-colors";
 import { safeGoBack } from "@/lib/navigation";
@@ -30,6 +31,14 @@ export default function ConversationThreadScreen() {
   // React Compiler's purity check flags impure calls even inside an event
   // handler, not just during render.
   const tempIdCounter = useRef(0);
+
+  // No phone notification for a chat you're already looking at.
+  useFocusEffect(
+    useCallback(() => {
+      setActiveConversationId(id);
+      return () => setActiveConversationId(null);
+    }, [id])
+  );
 
   useEffect(() => {
     let cancelled = false;

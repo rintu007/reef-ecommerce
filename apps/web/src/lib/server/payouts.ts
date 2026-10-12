@@ -99,34 +99,26 @@ export interface SellerEarningsSummary {
 export async function getSellerEarningsSummary(userId: string): Promise<SellerEarningsSummary> {
   const db = supabaseAdmin();
 
-  const { data: payoutAccount } = await db
-    .from("seller_payout_accounts")
-    .select("stripe_account_id, payouts_enabled")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  const { data: completedSales } = await db
-    .from("orders")
-    .select("total_charged, platform_fee")
-    .eq("seller_id", userId)
-    .eq("status", "completed");
+  // All four are independent — one parallel round trip instead of four.
+  const [{ data: payoutAccount }, { data: completedSales }, { data: lastSoldRow }, { data: lastBoughtRow }] = await Promise.all([
+    db.from("seller_payout_accounts").select("stripe_account_id, payouts_enabled").eq("user_id", userId).maybeSingle(),
+    db.from("orders").select("total_charged, platform_fee").eq("seller_id", userId).eq("status", "completed"),
+    db
+      .from("orders")
+      .select("listing_title, total_charged, platform_fee, created_at")
+      .eq("seller_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("orders")
+      .select("listing_title, total_charged, created_at")
+      .eq("buyer_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   const lifetimeEarned = (completedSales ?? []).reduce((sum, o) => sum + (o.total_charged - o.platform_fee), 0);
-
-  const { data: lastSoldRow } = await db
-    .from("orders")
-    .select("listing_title, total_charged, platform_fee, created_at")
-    .eq("seller_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: lastBoughtRow } = await db
-    .from("orders")
-    .select("listing_title, total_charged, created_at")
-    .eq("buyer_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   let stripeAvailable = 0;
   let stripePending = 0;

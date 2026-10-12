@@ -273,6 +273,26 @@ export function registerPushToken(client: ApiClient, token: string) {
   return client.post<{ ok: true }>("/api/push-tokens", { token });
 }
 
+export type AppNotificationType = "message" | "order" | "order_status" | "review";
+
+export interface AppNotification {
+  id: string;
+  type: AppNotificationType;
+  title: string;
+  body: string;
+  data: { conversationId?: string; orderId?: string; listingId?: string };
+  read_at: string | null;
+  created_at: string;
+}
+
+export function listNotifications(client: ApiClient) {
+  return client.get<{ notifications: AppNotification[]; unreadCount: number }>("/api/notifications");
+}
+
+export function markAllNotificationsRead(client: ApiClient) {
+  return client.post<{ ok: true }>("/api/notifications/read");
+}
+
 export interface ConversationThread {
   id: string;
   listing_id: string | null;

@@ -1,21 +1,10 @@
-import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { usePayoutStatus } from "@/lib/use-payout-status";
+import type { PayoutStatusState } from "@/lib/use-payout-status";
 import { themeColors } from "@/lib/theme-colors";
 
-export function PayoutsSection() {
-  const { loading, connecting, connected, payoutsEnabled, error, refresh, connect } = usePayoutStatus();
-
-  // Refetch whenever this screen regains focus, not just once on mount —
-  // the most common way status actually changes is the user going to
-  // Stripe's onboarding in a browser and coming back, which re-focuses
-  // this screen without necessarily remounting it.
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [refresh])
-  );
+/** Status is owned by the profile screen (one fetch, shared with the completion meter) rather than fetched again in here. */
+export function PayoutsSection({ status }: { status: PayoutStatusState }) {
+  const { loading, connecting, connected, payoutsEnabled, error, connect } = status;
 
   if (loading) {
     return (
@@ -32,8 +21,8 @@ export function PayoutsSection() {
         {payoutsEnabled
           ? "Stripe is connected — you can receive payments for sales."
           : connected
-            ? "Stripe onboarding started but isn't finished yet — payouts are disabled until it's complete."
-            : "Connect a Stripe account to receive payments when your listings sell."}
+            ? "Stripe setup started but isn't finished yet — payouts are off until it's complete."
+            : "Connect Stripe to receive money when your listings sell."}
       </Text>
       {error && <Text className="text-sm text-destructive mt-2">{error}</Text>}
       <Pressable onPress={connect} disabled={connecting} className="mt-3 self-start bg-foreground rounded-xl px-4 py-2.5">

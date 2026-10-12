@@ -11,7 +11,6 @@ import {
   type ShipOrderInput,
 } from "@reef-market/shared";
 import type { AuthUser } from "./auth";
-import { sendPushNotification } from "./push";
 import { stripe } from "./stripe";
 import { supabaseAdmin } from "./supabase-admin";
 
@@ -175,7 +174,7 @@ export async function checkoutCart(buyerId: string, items: CheckoutInput[]): Pro
  * "pending" (already confirmed by an earlier delivery of the same event, or
  * unknown order), matching Stripe's at-least-once webhook delivery.
  */
-/** Returns the confirmed order's id (for notifyNewOrder via after()) or null if there was nothing to confirm. */
+/** Returns the confirmed order's id, or null if there was nothing to confirm. */
 export async function confirmOrderPayment(paymentIntentId: string): Promise<string | null> {
   const db = supabaseAdmin();
   const { data: order, error } = await db
@@ -189,18 +188,6 @@ export async function confirmOrderPayment(paymentIntentId: string): Promise<stri
   await db.from("orders").update({ status: "confirmed" }).eq("id", order.id);
   await db.rpc("decrement_listing_quantity", { p_listing_id: order.listing_id, p_amount: order.quantity });
   return order.id;
-}
-
-/** Call via after() from the webhook route, not inline in confirmOrderPayment — a push-send failure should never delay or break Stripe's webhook response. */
-export async function notifyNewOrder(orderId: string): Promise<void> {
-  const db = supabaseAdmin();
-  const { data: order } = await db.from("orders").select("seller_id, listing_title").eq("id", orderId).maybeSingle();
-  if (!order) return;
-  await sendPushNotification(order.seller_id, {
-    title: "You made a sale! 🎉",
-    body: `Someone just ordered "${order.listing_title}".`,
-    data: { type: "order", orderId },
-  });
 }
 
 /** payment_intent.payment_failed / .canceled — frees the listing back up for another attempt. */

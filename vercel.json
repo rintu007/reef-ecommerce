@@ -3,6 +3,7 @@
   "buildCommand": "pnpm --filter @reef-market/web build",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
+  "regions": ["icn1"],
   "crons": [
     {
       "path": "/api/cron/release-pending-pickups",
